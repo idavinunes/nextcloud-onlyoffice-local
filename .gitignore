@@ -1,0 +1,11 @@
+/.env
+*.crt
+*.key
+*.csr
+/data/
+/backups/
+/logs/
+*.log
+.DS_Store
+Thumbs.db
+node_modules/

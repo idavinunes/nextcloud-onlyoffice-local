@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd /var/www/html
+
+echo "[bootstrap] applying Nextcloud overwrite config..."
+
+php occ config:system:set overwrite.cli.url --value="${NC_OVERWRITE_CLI_URL}"
+php occ config:system:set overwritehost --value="${NC_OVERWRITE_HOST}"
+php occ config:system:set overwriteprotocol --value="${NC_OVERWRITE_PROTOCOL}"
+
+# trusted_domains (suporta lista separada por vírgula)
+trusted_domains="${NC_TRUSTED_DOMAINS:-${NC_OVERWRITE_HOST:-}}"
+if [ -n "${trusted_domains}" ]; then
+  echo "[bootstrap] applying trusted_domains..."
+  IFS=',' read -r -a domains <<<"${trusted_domains}"
+  idx=0
+  for domain in "${domains[@]}"; do
+    clean_domain="$(echo "${domain}" | xargs)"
+    if [ -n "${clean_domain}" ]; then
+      php occ config:system:set trusted_domains "${idx}" --value="${clean_domain}"
+      idx=$((idx + 1))
+    fi
+  done
+fi
+
+# trusted_proxies (para proxy reverso/Nginx no host)
+if [ -n "${NC_TRUSTED_PROXIES:-}" ]; then
+  echo "[bootstrap] applying trusted_proxies..."
+  IFS=',' read -r -a proxies <<<"${NC_TRUSTED_PROXIES}"
+  idx=0
+  for proxy in "${proxies[@]}"; do
+    clean_proxy="$(echo "${proxy}" | xargs)"
+    if [ -n "${clean_proxy}" ]; then
+      php occ config:system:set trusted_proxies "${idx}" --value="${clean_proxy}"
+      idx=$((idx + 1))
+    fi
+  done
+fi
+
+echo "[bootstrap] applying cache/redis config..."
+php occ config:system:set memcache.local --value="\\OC\\Memcache\\APCu"
+php occ config:system:set memcache.locking --value="\\OC\\Memcache\\Redis"
+php occ config:system:set redis host --value="${REDIS_HOST:-redis}"
+php occ config:system:set redis port --type=integer --value="${REDIS_PORT:-6379}"
+
+echo "[bootstrap] applying OnlyOffice app config..."
+
+# ✅ Ajustes do app OnlyOffice (Nextcloud app)
+php occ config:app:set onlyoffice DocumentServerUrl --value="${OO_PUBLIC_URL}"
+php occ config:app:set onlyoffice DocumentServerInternalUrl --value="${OO_INTERNAL_URL}"
+php occ config:app:set onlyoffice StorageUrl --value="${NC_INTERNAL_URL}"
+php occ config:app:set onlyoffice jwt_secret --value="${OO_JWT_SECRET}"
+
+echo "[bootstrap] done."

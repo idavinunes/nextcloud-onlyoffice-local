@@ -1,0 +1,271 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "${REPO_ROOT}"
+
+if [ ! -f "docker-compose.yml" ]; then
+  echo "Este script precisa ser executado na raiz do repositório (onde está o docker-compose.yml)." >&2
+  exit 1
+fi
+
+OS_ID="$(. /etc/os-release && echo "${ID:-}")"
+OS_VERSION="$(. /etc/os-release && echo "${VERSION_ID:-}")"
+if [ "${OS_ID}" != "ubuntu" ] || [ "${OS_VERSION%%.*}" != "22" ]; then
+  echo "Aviso: alvo testado é Ubuntu 22.04; detectado ${OS_ID} ${OS_VERSION}." >&2
+fi
+
+SUDO=""
+if [ "$(id -u)" -ne 0 ]; then
+  if command -v sudo >/dev/null 2>&1; then
+    SUDO="sudo"
+  else
+    echo "Instale sudo ou execute como root." >&2
+    exit 1
+  fi
+fi
+
+ask_yes_no() {
+  local prompt="$1" default="${2:-n}" reply suffix="[y/N]"
+  [ "${default}" = "y" ] && suffix="[Y/n]"
+  read -r -p "${prompt} ${suffix} " reply || true
+  reply="${reply:-${default}}"
+  case "${reply}" in
+    [Yy]) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+prompt_default() {
+  local prompt="$1" default="$2" reply
+  read -r -p "${prompt} [${default}]: " reply || true
+  echo "${reply:-${default}}"
+}
+
+ensure_docker() {
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
+    echo "[ok] Docker e compose plugin já instalados."
+    return
+  fi
+  if ask_yes_no "Instalar Docker e plugin compose?" "y"; then
+    ${SUDO} apt-get update
+    ${SUDO} apt-get install -y ca-certificates curl gnupg lsb-release
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | ${SUDO} gpg --dearmor -o /usr/share/keyrings/docker.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | ${SUDO} tee /etc/apt/sources.list.d/docker.list >/dev/null
+    ${SUDO} apt-get update
+    ${SUDO} apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+    ${SUDO} systemctl enable --now docker
+    if [ -n "${SUDO}" ]; then
+      ${SUDO} usermod -aG docker "${USER}"
+      echo "[info] Adicionado ${USER} ao grupo docker (faça logout/login para efeito)."
+    fi
+  else
+    echo "[warn] Docker não instalado; abortando."
+    exit 1
+  fi
+}
+
+create_dirs() {
+  local dirs=("$@")
+  for dir in "${dirs[@]}"; do
+    ${SUDO} mkdir -p "${dir}"
+  done
+}
+
+render_san_cfg() {
+  local file="$1" domains_csv="$2" idx=1
+  {
+    echo "[req]"
+    echo "distinguished_name=req"
+    echo "req_extensions=req_ext"
+    echo "prompt=no"
+    echo "[req_ext]"
+    echo "subjectAltName=@alt_names"
+    echo "[alt_names]"
+    IFS=',' read -r -a doms <<<"${domains_csv}"
+    for d in "${doms[@]}"; do
+      d_clean="$(echo "${d}" | xargs)"
+      if [ -n "${d_clean}" ]; then
+        echo "DNS.${idx}=${d_clean}"
+        idx=$((idx + 1))
+      fi
+    done
+  } > "${file}"
+}
+
+generate_ca_and_cert() {
+  local cert_dir="$1" domains_csv="$2"
+  if ! ask_yes_no "Gerar CA interna e certificado de servidor (SAN)?" "y"; then
+    return
+  fi
+
+  ${SUDO} mkdir -p "${cert_dir}"
+  local ca_key="${cert_dir}/lan-ca.key"
+  local ca_crt="${cert_dir}/lan-ca.crt"
+  local srv_key="${cert_dir}/mms.key"
+  local srv_crt="${cert_dir}/mms.crt"
+
+  if [ -f "${ca_key}" ] || [ -f "${ca_crt}" ]; then
+    if ask_yes_no "CA existente detectada em ${cert_dir}. Substituir?" "n"; then
+      ${SUDO} rm -f "${ca_key}" "${ca_crt}"
+    else
+      echo "[info] Mantendo CA existente."
+    fi
+  fi
+
+  if [ ! -f "${ca_key}" ] || [ ! -f "${ca_crt}" ]; then
+    ${SUDO} openssl req -x509 -new -nodes -sha256 -days 3650 -newkey rsa:4096 \
+      -keyout "${ca_key}" -out "${ca_crt}" -subj "/CN=LAN-CA"
+    ${SUDO} chmod 600 "${ca_key}"
+    echo "[ok] CA gerada em ${ca_crt}."
+  fi
+
+  local san_cfg
+  san_cfg="$(mktemp)"
+  render_san_cfg "${san_cfg}" "${domains_csv}"
+  local cn
+  cn="$(echo "${domains_csv}" | cut -d',' -f1 | xargs)"
+
+  ${SUDO} openssl req -new -nodes -newkey rsa:4096 -keyout "${srv_key}" -out "${cert_dir}/mms.csr" \
+    -subj "/CN=${cn}" -config "${san_cfg}"
+  ${SUDO} openssl x509 -req -in "${cert_dir}/mms.csr" -CA "${ca_crt}" -CAkey "${ca_key}" -CAcreateserial \
+    -CAserial "${cert_dir}/lan-ca.srl" \
+    -out "${srv_crt}" -days 825 -sha256 -extfile "${san_cfg}" -extensions req_ext
+  ${SUDO} chmod 600 "${srv_key}"
+  ${SUDO} rm -f "${cert_dir}/mms.csr" "${cert_dir}/lan-ca.srl" "${san_cfg}"
+  echo "[ok] Certificado emitido em ${srv_crt} com SAN: ${domains_csv}."
+
+  if ask_yes_no "Instalar CA no trust store do host (update-ca-certificates)?" "y"; then
+    ${SUDO} cp "${ca_crt}" /usr/local/share/ca-certificates/lan-ca.crt
+    ${SUDO} update-ca-certificates
+  fi
+}
+
+render_nginx_conf() {
+  local template="$1" domain="$2" cert_dir="$3" output="$4"
+  ${SUDO} sed \
+    -e "s/cloud\\.mms/${domain}/g" \
+    -e "s/onlyoffice\\.mms/${domain}/g" \
+    -e "s#/opt/ssl/certs/mms.crt#${cert_dir}/mms.crt#g" \
+    -e "s#/opt/ssl/certs/mms.key#${cert_dir}/mms.key#g" \
+    "${template}" | ${SUDO} tee "${output}" >/dev/null
+}
+
+configure_nginx() {
+  local cloud_domain="$1" oo_domain="$2" cert_dir="$3"
+  if ! ask_yes_no "Instalar/atualizar Nginx com estas confs?" "y"; then
+    return
+  fi
+  if ! command -v nginx >/dev/null 2>&1; then
+    ${SUDO} apt-get update
+    ${SUDO} apt-get install -y nginx
+  fi
+  local avail="/etc/nginx/sites-available"
+  local enabled="/etc/nginx/sites-enabled"
+  ${SUDO} mkdir -p "${avail}" "${enabled}"
+
+  render_nginx_conf "${REPO_ROOT}/nginx/cloud.mms.conf" "${cloud_domain}" "${cert_dir}" "${avail}/${cloud_domain}.conf"
+  render_nginx_conf "${REPO_ROOT}/nginx/onlyoffice.mms.conf" "${oo_domain}" "${cert_dir}" "${avail}/${oo_domain}.conf"
+
+  ${SUDO} ln -sf "${avail}/${cloud_domain}.conf" "${enabled}/${cloud_domain}.conf"
+  ${SUDO} ln -sf "${avail}/${oo_domain}.conf" "${enabled}/${oo_domain}.conf"
+  ${SUDO} nginx -t
+  ${SUDO} systemctl reload nginx
+  echo "[ok] Nginx configurado para ${cloud_domain} e ${oo_domain}."
+}
+
+generate_env_file() {
+  local env_file=".env"
+  local cloud_domain="$1" oo_domain="$2" data_root="$3" cert_dir="$4" tz_value="$5" proxies="$6"
+  if [ -f "${env_file}" ]; then
+    if ! ask_yes_no ".env já existe. Substituir?" "n"; then
+      echo "[info] Mantendo .env existente."
+      return
+    fi
+  fi
+
+  local db_root db_pass jwt_secret
+  db_root="$(openssl rand -hex 16)"
+  db_pass="$(openssl rand -hex 16)"
+  jwt_secret="$(openssl rand -hex 32)"
+
+  cat > "${env_file}" <<EOF
+TZ=${tz_value}
+NC_HTTP_PORT=8080
+OO_HTTP_PORT=8082
+
+NC_DB_ROOT_PASSWORD=${db_root}
+NC_DB_NAME=nextcloud
+NC_DB_USER=ncuser
+NC_DB_PASSWORD=${db_pass}
+
+NC_DB_VOLUME=${data_root}/nc-db
+NC_APP_VOLUME=${data_root}/nc-app
+NC_DATA_VOLUME=${data_root}/nextcloud/data
+
+OO_PG_VOLUME=${data_root}/onlyoffice/postgres
+OO_DATA_VOLUME=${data_root}/onlyoffice/data
+OO_LOGS_VOLUME=${data_root}/onlyoffice/logs
+OO_LIB_VOLUME=${data_root}/onlyoffice/lib
+
+NC_OVERWRITE_CLI_URL=https://${cloud_domain}
+NC_OVERWRITE_HOST=${cloud_domain}
+NC_OVERWRITE_PROTOCOL=https
+NC_TRUSTED_DOMAINS=${cloud_domain}
+NC_TRUSTED_PROXIES=${proxies}
+
+OO_PUBLIC_URL=https://${oo_domain}/
+OO_INTERNAL_URL=http://onlyoffice/
+NC_INTERNAL_URL=http://app/
+OO_JWT_SECRET=${jwt_secret}
+EOF
+  echo "[ok] .env gerado com senhas/segredos aleatórios."
+}
+
+bring_up_stack() {
+  if ask_yes_no "Subir stack agora com docker compose up -d?" "y"; then
+    docker compose up -d
+  else
+    echo "[info] Stack não iniciada; execute 'docker compose up -d' quando pronto."
+  fi
+}
+
+main() {
+  echo "=== Parâmetros ==="
+  local cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies
+  cloud_domain="$(prompt_default "Domínio do Nextcloud" "cloud.mms")"
+  oo_domain="$(prompt_default "Domínio do OnlyOffice" "onlyoffice.mms")"
+  base_dir="$(prompt_default "Diretório base único (dados/certs)" "/data/nextcloud-onlyoffice")"
+  data_root="${base_dir}/data"
+  cert_dir="${base_dir}/certs"
+  tz_value="$(prompt_default "Timezone (TZ)" "America/Sao_Paulo")"
+  proxies="$(prompt_default "trusted_proxies (CSV)" "172.17.0.1,127.0.0.1")"
+
+  ensure_docker
+  create_dirs "${data_root}/nc-db" "${data_root}/nc-app" "${data_root}/nextcloud/data" \
+    "${data_root}/onlyoffice/postgres" "${data_root}/onlyoffice/data" "${data_root}/onlyoffice/logs" \
+    "${data_root}/onlyoffice/lib" "${cert_dir}"
+
+  generate_ca_and_cert "${cert_dir}" "${cloud_domain},${oo_domain}"
+  generate_env_file "${cloud_domain}" "${oo_domain}" "${data_root}" "${cert_dir}" "${tz_value}" "${proxies}"
+  configure_nginx "${cloud_domain}" "${oo_domain}" "${cert_dir}"
+
+  echo "=== Resumo ==="
+  echo "Domínios: NC=${cloud_domain}, OO=${oo_domain}"
+  echo "Base: ${base_dir}"
+  echo "Volumes em: ${data_root}"
+  echo "Certificados: ${cert_dir}/mms.crt|key (CA: ${cert_dir}/lan-ca.crt)"
+  echo ".env gerado (revise senhas/URLs se necessário)"
+
+  bring_up_stack
+
+  cat <<EOF
+=== Próximos testes ===
+- TLS: curl -Iv https://${cloud_domain} e openssl s_client -connect ${cloud_domain}:443 -servername ${cloud_domain}
+- Nextcloud: https://${cloud_domain}/status.php e “Security & setup warnings”
+- OnlyOffice: https://${oo_domain}/healthcheck e edição via app OnlyOffice no Nextcloud
+EOF
+}
+
+main "$@"
