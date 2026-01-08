@@ -216,6 +216,12 @@ generate_ca_and_cert() {
     ${SUDO} cp "${ca_crt}" /usr/local/share/ca-certificates/lan-ca.crt
     ${SUDO} update-ca-certificates
   fi
+
+  if [ -n "${HOME:-}" ]; then
+    ${SUDO} cp "${ca_crt}" "${HOME}/lan-ca.crt"
+    [ -n "${SUDO}" ] && ${SUDO} chown "$(id -u):$(id -g)" "${HOME}/lan-ca.crt"
+    echo "[ok] CA copiada para ${HOME}/lan-ca.crt (importação em navegadores/clientes)."
+  fi
 }
 
 render_nginx_conf() {
