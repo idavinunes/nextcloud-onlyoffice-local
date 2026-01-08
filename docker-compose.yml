@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   # ------------------ NEXTCLOUD ------------------
   db:
@@ -147,3 +145,4 @@ services:
 networks:
   interna:
     name: interna
+    external: true
