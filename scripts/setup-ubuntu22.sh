@@ -132,6 +132,16 @@ detect_docker_cmd() {
   fi
 }
 
+ensure_network() {
+  local net_name="interna"
+  if ! ${DOCKER_BIN} network inspect "${net_name}" >/dev/null 2>&1; then
+    echo "[info] Criando rede docker ${net_name} (external)..."
+    ${DOCKER_BIN} network create "${net_name}"
+  else
+    echo "[ok] Rede docker ${net_name} já existe."
+  fi
+}
+
 create_dirs() {
   local dirs=("$@")
   for dir in "${dirs[@]}"; do
@@ -311,6 +321,7 @@ main() {
   prepare_data_disk
   ensure_docker
   detect_docker_cmd
+  ensure_network
   create_dirs "${data_root}/nc-db" "${data_root}/nc-app" "${data_root}/nextcloud/data" \
     "${data_root}/onlyoffice/postgres" "${data_root}/onlyoffice/data" "${data_root}/onlyoffice/logs" \
     "${data_root}/onlyoffice/lib" "${cert_dir}"
