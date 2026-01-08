@@ -78,29 +78,29 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
    [req_ext]
    subjectAltName=@alt_names
    [alt_names]
-   DNS.1=cloud.mms
-   DNS.2=onlyoffice.mms
+   DNS.1=cloud.axisnetworks
+   DNS.2=onlyoffice.axisnetworks
    EOF
 
-   openssl req -new -nodes -newkey rsa:4096 -keyout mms.key -out mms.csr \
-     -subj "/CN=cloud.mms" -config san.cnf
-   openssl x509 -req -in mms.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
-     -out mms.crt -days 825 -sha256 -extfile san.cnf -extensions req_ext
-   sudo cp mms.crt mms.key /opt/ssl/certs/
+   openssl req -new -nodes -newkey rsa:4096 -keyout axis.key -out axis.csr \
+     -subj "/CN=cloud.axisnetworks" -config san.cnf
+   openssl x509 -req -in axis.csr -CA ca.crt -CAkey ca.key -CAcreateserial \
+     -out axis.crt -days 825 -sha256 -extfile san.cnf -extensions req_ext
+   sudo cp axis.crt axis.key /opt/ssl/certs/
    ```
    - Para outro cliente, troque os domínios em `san.cnf` (ex.: `cloud.cliente.local`, `onlyoffice.cliente.local`), gere novo par `*.crt`/`*.key` e ajuste o `.env`/Nginx conforme.
-6. DNS interno: aponte `cloud.mms` e `onlyoffice.mms` para o IP do host no Mikrotik.
+6. DNS interno: aponte `cloud.axisnetworks` e `onlyoffice.axisnetworks` para o IP do host no Mikrotik.
 7. Configurar `.env`: `cp .env.example .env` e edite senhas, caminhos, domínios, JWT.
-8. Ajustar Nginx: edite `nginx/cloud.mms.conf` e `nginx/onlyoffice.mms.conf` se mudar domínios/portas/caminhos; copie para `/etc/nginx/sites-available` e habilite no host; depois `sudo nginx -t && sudo systemctl reload nginx`.
+8. Ajustar Nginx: edite `nginx/cloud.axisnetworks.conf` e `nginx/onlyoffice.axisnetworks.conf` (ou renomeie/ajuste os arquivos conforme seus domínios) se mudar domínios/portas/caminhos; copie para `/etc/nginx/sites-available` e habilite no host; depois `sudo nginx -t && sudo systemctl reload nginx`.
 9. Subir a stack:
    ```bash
    docker compose up -d
    docker compose ps
    ```
 10. Validação final:
-    - TLS: `curl -Iv https://cloud.mms` e `openssl s_client -connect cloud.mms:443 -servername cloud.mms`.
-    - Nextcloud: `https://cloud.mms/status.php` e checar “Security & setup warnings”.
-    - OnlyOffice: `https://onlyoffice.mms/healthcheck` e teste de edição via app OnlyOffice no Nextcloud.
+    - TLS: `curl -Iv https://cloud.axisnetworks` e `openssl s_client -connect cloud.axisnetworks:443 -servername cloud.axisnetworks`.
+    - Nextcloud: `https://cloud.axisnetworks/status.php` e checar “Security & setup warnings”.
+    - OnlyOffice: `https://onlyoffice.axisnetworks/healthcheck` e teste de edição via app OnlyOffice no Nextcloud.
 
 ## Onde pegar a CA para clientes
 - Por padrão, o script gera a CA em `.../certs/lan-ca.crt` dentro do diretório base (ex.: `/data/nextcloud-onlyoffice/certs/lan-ca.crt`). Copie esse arquivo para os clientes.
@@ -143,7 +143,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   ```
 - Se precisar reaplicar manualmente (ex.: mudou domínios), rode:
   ```bash
-  docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice DocumentServerUrl --value="https://onlyoffice.mms/"'
+  docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice DocumentServerUrl --value="https://onlyoffice.axisnetworks/"'
   docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice DocumentServerInternalUrl --value="http://onlyoffice/"'
   docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice StorageUrl --value="http://app/"'
   docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice jwt_secret --value="SEU_JWT_AQUI"'
@@ -151,21 +151,21 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Certifique-se de que o `OO_JWT_SECRET` é o mesmo no Document Server e no app OnlyOffice do Nextcloud.
 
 ## WebDAV (Windows/macOS/Linux)
-- Endpoint: `https://cloud.mms/remote.php/dav/files/<usuario>/`
+- Endpoint: `https://cloud.axisnetworks/remote.php/dav/files/<usuario>/`
 - Use **senha de aplicativo** (Configurações > Segurança) em vez da senha da conta.
 - Windows:
   - Serviço “WebClient” deve estar iniciado (`sc config WebClient start=auto` e `sc start WebClient`).
   - Se o Explorer não listar, mapeie na sessão do usuário (não admin):
     ```bat
-    net use Z: https://cloud.mms/remote.php/dav/files/SEU_USUARIO/ /user:SEU_USUARIO SENHA_APP /persistent:yes
+    net use Z: https://cloud.axisnetworks/remote.php/dav/files/SEU_USUARIO/ /user:SEU_USUARIO SENHA_APP /persistent:yes
     ```
     OU via UNC:
     ```bat
-    net use Z: \\cloud.mms@SSL\remote.php\dav\files\SEU_USUARIO\ /user:SEU_USUARIO SENHA_APP /persistent:yes
+    net use Z: \\cloud.axisnetworks@SSL\remote.php\dav\files\SEU_USUARIO\ /user:SEU_USUARIO SENHA_APP /persistent:yes
     ```
   - Se o Windows reclamar de revogação (CRYPT_E_NO_REVOCATION_CHECK), desabilite a checagem em Opções da Internet > Avançado ou implemente CRL/OCSP acessível para sua CA interna.
   - Se o drive mapeado não aparecer entre sessões elevadas/normais, habilite `EnableLinkedConnections=1` em `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System` e reinicie.
-- macOS: Finder > Conectar ao servidor > `https://cloud.mms/remote.php/dav/files/SEU_USUARIO/`, use senha de app.
+- macOS: Finder > Conectar ao servidor > `https://cloud.axisnetworks/remote.php/dav/files/SEU_USUARIO/`, use senha de app.
 - Linux: `davfs2` ou `curl`/`cadaver` com a mesma URL e senha de app.
 
 ### Ajuste de brute force para redes internas
@@ -178,8 +178,8 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 
 ## Pré-requisitos
 - Docker + Docker Compose.
-- DNS interno apontando `cloud.mms` e `onlyoffice.mms` para o IP do host.
-- CA interna instalada em todos os clientes e no host. Gere um certificado com SAN cobrindo pelo menos `cloud.mms` e `onlyoffice.mms` e coloque em `/opt/ssl/certs/mms.crt` e `/opt/ssl/certs/mms.key`.
+- DNS interno apontando `cloud.axisnetworks` e `onlyoffice.axisnetworks` para o IP do host.
+- CA interna instalada em todos os clientes e no host. Gere um certificado com SAN cobrindo pelo menos `cloud.axisnetworks` e `onlyoffice.axisnetworks` e coloque em `/opt/ssl/certs/axis.crt` e `/opt/ssl/certs/axis.key` (ou use os caminhos/prefixos que preferir).
 - Sincronização de horário ativa (NTP no Mikrotik/host) para evitar falhas de TLS/JWT.
 
 ## Configuração rápida (.env)
@@ -194,7 +194,7 @@ Copie `.env.example` para `.env` e ajuste:
 - `TZ`: timezone compartilhado pelos serviços.
 
 ## Ajuste do Nginx no host
-1. Edite `nginx/cloud.mms.conf` e `nginx/onlyoffice.mms.conf` com seus domínios/caminhos de certificado e upstreams, se alterar as portas.
+1. Edite `nginx/cloud.axisnetworks.conf` e `nginx/onlyoffice.axisnetworks.conf` (ou ajuste/renomeie conforme seus domínios) com seus domínios/caminhos de certificado e upstreams, se alterar as portas.
 2. Garanta que o certificado contém os SAN corretos e é assinado pela sua CA interna.
 3. Recarregue o Nginx do host após copiar as confs: `sudo nginx -t && sudo systemctl reload nginx`.
 
@@ -212,9 +212,9 @@ O contêiner `nc-app` roda `scripts/nextcloud-bootstrap.sh` a cada start para pa
 - Config do app OnlyOffice (URLs pública/interna e `jwt_secret`).
 
 ## Validação pós-start
-- TLS: `curl -Iv https://cloud.mms` e `openssl s_client -connect cloud.mms:443 -servername cloud.mms` (cadeia completa + SAN).
-- Nextcloud: acessar `https://cloud.mms/status.php` e checar “Security & setup warnings” na UI.
-- OnlyOffice: `https://onlyoffice.mms/healthcheck` e abrir/editar um documento pelo app OnlyOffice do Nextcloud.
+- TLS: `curl -Iv https://cloud.axisnetworks` e `openssl s_client -connect cloud.axisnetworks:443 -servername cloud.axisnetworks` (cadeia completa + SAN).
+- Nextcloud: acessar `https://cloud.axisnetworks/status.php` e checar “Security & setup warnings” na UI.
+- OnlyOffice: `https://onlyoffice.axisnetworks/healthcheck` e abrir/editar um documento pelo app OnlyOffice do Nextcloud.
 - Logs úteis: `docker compose logs -f nc-app`, `nc-cron`, `onlyoffice-documentserver`.
 
 ## Backup e migração
