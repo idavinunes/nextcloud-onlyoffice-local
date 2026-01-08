@@ -33,7 +33,22 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
    git clone https://github.com/idavinunes/nextcloud-onlyoffice-local.git
    cd nextcloud-onlyoffice-local
    ```
-3. Criar pastas de dados/volumes (ajuste se mudar os caminhos no `.env`):
+3. Preparar disco de dados (recomendado)
+   - Identifique o disco: `lsblk`
+   - (Exemplo) Criar partição e formatar em ext4 no `/dev/sdb`:
+     ```bash
+     sudo parted /dev/sdb mklabel gpt
+     sudo parted -a opt /dev/sdb mkpart primary ext4 0% 100%
+     sudo mkfs.ext4 -L data /dev/sdb1
+     ```
+   - Criar ponto de montagem e montar em `/data`:
+     ```bash
+     sudo mkdir -p /data
+     echo 'LABEL=data /data ext4 defaults 0 2' | sudo tee -a /etc/fstab
+     sudo mount -a
+     ```
+   - Se usar outro ponto, ajuste os caminhos no `.env` ou use o setup script para gerar tudo sob um diretório base.
+4. Criar pastas de dados/volumes (ajuste se mudar os caminhos no `.env` ou se usar o setup script com outro diretório base):
    ```bash
    sudo mkdir -p /data/nc-db /data/nc-app /data/compose/nextcloud/data
    sudo mkdir -p /data/onlyoffice/{postgres,data,logs,lib}
