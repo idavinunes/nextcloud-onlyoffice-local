@@ -31,5 +31,13 @@ php occ config:app:set onlyoffice jwt_secret --value=\"${OO_JWT_SECRET}\"
 "
 
 echo "[onlyoffice] aplicando config no nc-app..."
-docker exec -i -u www-data nc-app bash -lc "${CMD}"
+if ! docker exec -i -u www-data nc-app bash -lc "${CMD}"; then
+  if [ -n "${SUDO:-}" ]; then
+    echo "[warn] Sem permissão para docker, tentando com sudo..."
+    ${SUDO} docker exec -i -u www-data nc-app bash -lc "${CMD}"
+  else
+    echo "[error] Falha ao executar docker exec; verifique permissões ou rode com sudo." >&2
+    exit 1
+  fi
+fi
 echo "[onlyoffice] pronto."
