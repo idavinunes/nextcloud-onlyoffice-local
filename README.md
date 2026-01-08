@@ -79,7 +79,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 10. Validação final:
     - TLS: `curl -Iv https://cloud.mms` e `openssl s_client -connect cloud.mms:443 -servername cloud.mms`.
     - Nextcloud: `https://cloud.mms/status.php` e checar “Security & setup warnings”.
-    - OnlyOffice: `https://onlyoffice.mms/healthcheck` e teste de edição via app OnlyOffice no Nextcloud.
+- OnlyOffice: `https://onlyoffice.mms/healthcheck` e teste de edição via app OnlyOffice no Nextcloud.
 
 ## Onde pegar a CA para clientes
 - Por padrão, o script gera a CA em `.../certs/lan-ca.crt` dentro do diretório base (ex.: `/data/nextcloud-onlyoffice/certs/lan-ca.crt`). Copie esse arquivo para os clientes.
@@ -90,6 +90,21 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Windows: executar `certmgr.msc` ou via MMC → “Trusted Root Certification Authorities” → Import → apontar para `lan-ca.crt`.
 - macOS: abrir “Acesso às Chaves” → Sistema → importar `lan-ca.crt` como “Sempre confiar”.
 - Linux: colocar em `/usr/local/share/ca-certificates/` e rodar `sudo update-ca-certificates`.
+
+## OnlyOffice no Nextcloud (configuração)
+- O bootstrap (`scripts/nextcloud-bootstrap.sh`) já aplica no Nextcloud:
+  - `DocumentServerUrl` (externo HTTPS) a partir de `OO_PUBLIC_URL`
+  - `DocumentServerInternalUrl` (HTTP na rede interna) a partir de `OO_INTERNAL_URL`
+  - `StorageUrl` (URL interna do Nextcloud) a partir de `NC_INTERNAL_URL`
+  - `jwt_secret` a partir de `OO_JWT_SECRET`
+- Se precisar reaplicar manualmente (ex.: mudou domínios), rode:
+  ```bash
+  docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice DocumentServerUrl --value="https://onlyoffice.mms/"'
+  docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice DocumentServerInternalUrl --value="http://onlyoffice/"'
+  docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice StorageUrl --value="http://app/"'
+  docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice jwt_secret --value="SEU_JWT_AQUI"'
+  ```
+- Certifique-se de que o `OO_JWT_SECRET` é o mesmo no Document Server e no app OnlyOffice do Nextcloud.
 
 ## Pré-requisitos
 - Docker + Docker Compose.
