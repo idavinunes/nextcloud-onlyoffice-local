@@ -129,6 +129,24 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   ```
 - Certifique-se de que o `OO_JWT_SECRET` é o mesmo no Document Server e no app OnlyOffice do Nextcloud.
 
+## WebDAV (Windows/macOS/Linux)
+- Endpoint: `https://cloud.mms/remote.php/dav/files/<usuario>/`
+- Use **senha de aplicativo** (Configurações > Segurança) em vez da senha da conta.
+- Windows:
+  - Serviço “WebClient” deve estar iniciado (`sc config WebClient start=auto` e `sc start WebClient`).
+  - Se o Explorer não listar, mapeie na sessão do usuário (não admin):
+    ```bat
+    net use Z: https://cloud.mms/remote.php/dav/files/SEU_USUARIO/ /user:SEU_USUARIO SENHA_APP /persistent:yes
+    ```
+    OU via UNC:
+    ```bat
+    net use Z: \\cloud.mms@SSL\remote.php\dav\files\SEU_USUARIO\ /user:SEU_USUARIO SENHA_APP /persistent:yes
+    ```
+  - Se o Windows reclamar de revogação (CRYPT_E_NO_REVOCATION_CHECK), desabilite a checagem em Opções da Internet > Avançado ou implemente CRL/OCSP acessível para sua CA interna.
+  - Se o drive mapeado não aparecer entre sessões elevadas/normais, habilite `EnableLinkedConnections=1` em `HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System` e reinicie.
+- macOS: Finder > Conectar ao servidor > `https://cloud.mms/remote.php/dav/files/SEU_USUARIO/`, use senha de app.
+- Linux: `davfs2` ou `curl`/`cadaver` com a mesma URL e senha de app.
+
 ## Pré-requisitos
 - Docker + Docker Compose.
 - DNS interno apontando `cloud.mms` e `onlyoffice.mms` para o IP do host.
