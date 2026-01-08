@@ -93,6 +93,8 @@ prepare_data_disk() {
   echo "[ok] Disco preparado e montado em ${mountpoint}"
 }
 
+DOCKER_BIN="docker"
+
 ensure_docker() {
   if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     echo "[ok] Docker e compose plugin já instalados."
@@ -113,6 +115,19 @@ ensure_docker() {
   else
     echo "[warn] Docker não instalado; abortando."
     exit 1
+  fi
+}
+
+detect_docker_cmd() {
+  DOCKER_BIN="docker"
+  if ! ${DOCKER_BIN} info >/dev/null 2>&1; then
+    if [ -n "${SUDO}" ]; then
+      echo "[warn] Sem acesso ao docker.sock; usando sudo docker."
+      DOCKER_BIN="${SUDO} docker"
+    else
+      echo "[error] Sem acesso ao docker.sock. Faça logout/login para aplicar o grupo docker ou rode com sudo." >&2
+      exit 1
+    fi
   fi
 }
 
@@ -275,7 +290,7 @@ EOF
 
 bring_up_stack() {
   if ask_yes_no "Subir stack agora com docker compose up -d?" "y"; then
-    docker compose up -d
+    ${DOCKER_BIN} compose up -d
   else
     echo "[info] Stack não iniciada; execute 'docker compose up -d' quando pronto."
   fi
@@ -294,6 +309,7 @@ main() {
 
   prepare_data_disk
   ensure_docker
+  detect_docker_cmd
   create_dirs "${data_root}/nc-db" "${data_root}/nc-app" "${data_root}/nextcloud/data" \
     "${data_root}/onlyoffice/postgres" "${data_root}/onlyoffice/data" "${data_root}/onlyoffice/logs" \
     "${data_root}/onlyoffice/lib" "${cert_dir}"
