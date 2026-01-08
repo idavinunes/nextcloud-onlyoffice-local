@@ -52,11 +52,13 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
      sudo mount -a
      ```
    - Se usar outro ponto, ajuste os caminhos no `.env` ou use o setup script para gerar tudo sob um diretório base.
-4. Criar pastas de dados/volumes (ajuste se mudar os caminhos no `.env` ou se usar o setup script com outro diretório base):
+4. Criar pastas de dados/volumes (se não usar o script para criá-las; ajuste se mudar o diretório base):
    ```bash
-   sudo mkdir -p /data/nc-db /data/nc-app /data/compose/nextcloud/data
-   sudo mkdir -p /data/onlyoffice/{postgres,data,logs,lib}
-   sudo mkdir -p /opt/ssl/certs
+   sudo mkdir -p /data/nextcloud-onlyoffice/data/nc-db
+   sudo mkdir -p /data/nextcloud-onlyoffice/data/nc-app
+   sudo mkdir -p /data/nextcloud-onlyoffice/data/nextcloud/data
+   sudo mkdir -p /data/nextcloud-onlyoffice/data/onlyoffice/{postgres,data,logs,lib}
+   sudo mkdir -p /data/nextcloud-onlyoffice/certs
    ```
 4. Gerar CA interna (uma vez) e instalar em todos os clientes (Windows/macOS/Linux) e no host:
    ```bash
