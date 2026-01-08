@@ -10,6 +10,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 
 ## Script assistente (Ubuntu 22.04)
 - Executa instalação do Docker/Compose, cria pastas de volumes, gera CA interna + certificado SAN, cria `.env` com senhas aleatórias, opcionalmente instala/ajusta Nginx e pode subir a stack.
+- Pergunta se quer preparar um disco vazio para dados (formata/ext4 + monta em `/data` por padrão). Use só em disco vazio, pois apaga tudo.
 - Rode na raiz do repo:
   ```bash
   bash scripts/setup-ubuntu22.sh

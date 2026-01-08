@@ -43,6 +43,56 @@ prompt_default() {
   echo "${reply:-${default}}"
 }
 
+prepare_data_disk() {
+  if ! ask_yes_no "Preparar um disco vazio para dados (FORMATA E APAGA TUDO)? " "n"; then
+    return
+  fi
+
+  if ! command -v parted >/dev/null 2>&1; then
+    ${SUDO} apt-get update
+    ${SUDO} apt-get install -y parted
+  fi
+
+  echo "[info] Discos disponíveis:"
+  ${SUDO} lsblk -o NAME,SIZE,TYPE,MOUNTPOINT,FSTYPE
+
+  local device part mountpoint label
+  device="$(prompt_default "Dispositivo para formatar (ex.: /dev/sdb)" "")"
+  if [ -z "${device}" ] || [ ! -b "${device}" ]; then
+    echo "[warn] Dispositivo inválido; pulando preparo de disco."
+    return
+  fi
+
+  # monta nome da partição (sdb1 vs nvme0n1p1)
+  part="${device}1"
+  case "${device}" in
+    *[0-9]) part="${device}p1" ;;
+  esac
+
+  mountpoint="$(prompt_default "Ponto de montagem" "/data")"
+  label="$(prompt_default "Label do filesystem" "data")"
+
+  echo "[alerta] Isso VAI apagar TODO o conteúdo de ${device}."
+  if ! ask_yes_no "Confirmar formatação de ${device} (partição ${part})? " "n"; then
+    echo "[warn] Cancelado pelo usuário."
+    return
+  fi
+
+  ${SUDO} umount -f "${device}" "${part}" >/dev/null 2>&1 || true
+  ${SUDO} parted -s "${device}" mklabel gpt
+  ${SUDO} parted -s -a opt "${device}" mkpart primary ext4 0% 100%
+  ${SUDO} mkfs.ext4 -F -L "${label}" "${part}"
+
+  ${SUDO} mkdir -p "${mountpoint}"
+  if ! grep -q "LABEL=${label}[[:space:]]\+${mountpoint}[[:space:]]\+ext4" /etc/fstab 2>/dev/null; then
+    echo "LABEL=${label} ${mountpoint} ext4 defaults 0 2" | ${SUDO} tee -a /etc/fstab >/dev/null
+  else
+    echo "[warn] Entrada com LABEL=${label} já existe em /etc/fstab; mantendo."
+  fi
+  ${SUDO} mount -a
+  echo "[ok] Disco preparado e montado em ${mountpoint}"
+}
+
 ensure_docker() {
   if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
     echo "[ok] Docker e compose plugin já instalados."
@@ -242,6 +292,7 @@ main() {
   tz_value="$(prompt_default "Timezone (TZ)" "America/Sao_Paulo")"
   proxies="$(prompt_default "trusted_proxies (CSV)" "172.17.0.1,127.0.0.1")"
 
+  prepare_data_disk
   ensure_docker
   create_dirs "${data_root}/nc-db" "${data_root}/nc-app" "${data_root}/nextcloud/data" \
     "${data_root}/onlyoffice/postgres" "${data_root}/onlyoffice/data" "${data_root}/onlyoffice/logs" \
