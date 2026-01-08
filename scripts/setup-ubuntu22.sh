@@ -94,6 +94,7 @@ prepare_data_disk() {
 }
 
 DOCKER_BIN="docker"
+[ -n "${SUDO}" ] && DOCKER_BIN="${SUDO} docker"
 
 ensure_docker() {
   if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
