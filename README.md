@@ -18,7 +18,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   ```bash
   bash scripts/setup-ubuntu22.sh
   ```
-- Responde às perguntas (domínios, diretório base único, trusted proxies). Ele organiza tudo abaixo do diretório base (padrão `/data/nextcloud-onlyoffice`: `.../data` para volumes e `.../certs` para CA/cert). Se instalar Docker, será preciso relogar para o grupo `docker`.
+- Responde às perguntas (domínios, diretório base único, trusted proxies). Ele organiza tudo abaixo do diretório base (padrão `/data/nextcloud-onlyoffice`: `.../data` para volumes e `.../certs` para CA/cert). Domínios padrão sugeridos: `cloud.axisnetworks` (Nextcloud) e `onlyoffice.axisnetworks` (OnlyOffice). Se instalar Docker, será preciso relogar para o grupo `docker`.
 
 ## Passo a passo - Ubuntu 22.04
 1. Docker/Compose
