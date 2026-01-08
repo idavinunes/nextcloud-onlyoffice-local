@@ -44,6 +44,9 @@ php occ config:system:set memcache.locking --value="\\OC\\Memcache\\Redis"
 php occ config:system:set redis host --value="${REDIS_HOST:-redis}"
 php occ config:system:set redis port --type=integer --value="${REDIS_PORT:-6379}"
 
+echo "[bootstrap] ensuring OnlyOffice app installed/enabled..."
+php occ app:enable onlyoffice || { php occ app:install onlyoffice && php occ app:enable onlyoffice; }
+
 echo "[bootstrap] applying OnlyOffice app config..."
 
 # ✅ Ajustes do app OnlyOffice (Nextcloud app)

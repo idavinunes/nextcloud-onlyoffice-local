@@ -93,10 +93,15 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 
 ## OnlyOffice no Nextcloud (configuração)
 - O bootstrap (`scripts/nextcloud-bootstrap.sh`) já aplica no Nextcloud:
+  - Instala e habilita o app OnlyOffice (se não estiver presente).
   - `DocumentServerUrl` (externo HTTPS) a partir de `OO_PUBLIC_URL`
   - `DocumentServerInternalUrl` (HTTP na rede interna) a partir de `OO_INTERNAL_URL`
   - `StorageUrl` (URL interna do Nextcloud) a partir de `NC_INTERNAL_URL`
   - `jwt_secret` a partir de `OO_JWT_SECRET`
+- Script para reaplicar a config a partir do `.env`:
+  ```bash
+  bash scripts/onlyoffice-config.sh
+  ```
 - Se precisar reaplicar manualmente (ex.: mudou domínios), rode:
   ```bash
   docker exec -it -u www-data nc-app bash -lc 'cd /var/www/html && php occ config:app:set onlyoffice DocumentServerUrl --value="https://onlyoffice.mms/"'
