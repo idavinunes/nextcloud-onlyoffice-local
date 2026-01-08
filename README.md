@@ -79,7 +79,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 10. Validação final:
     - TLS: `curl -Iv https://cloud.mms` e `openssl s_client -connect cloud.mms:443 -servername cloud.mms`.
     - Nextcloud: `https://cloud.mms/status.php` e checar “Security & setup warnings”.
-- OnlyOffice: `https://onlyoffice.mms/healthcheck` e teste de edição via app OnlyOffice no Nextcloud.
+    - OnlyOffice: `https://onlyoffice.mms/healthcheck` e teste de edição via app OnlyOffice no Nextcloud.
 
 ## Onde pegar a CA para clientes
 - Por padrão, o script gera a CA em `.../certs/lan-ca.crt` dentro do diretório base (ex.: `/data/nextcloud-onlyoffice/certs/lan-ca.crt`). Copie esse arquivo para os clientes.
@@ -90,6 +90,24 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Windows: executar `certmgr.msc` ou via MMC → “Trusted Root Certification Authorities” → Import → apontar para `lan-ca.crt`.
 - macOS: abrir “Acesso às Chaves” → Sistema → importar `lan-ca.crt` como “Sempre confiar”.
 - Linux: colocar em `/usr/local/share/ca-certificates/` e rodar `sudo update-ca-certificates`.
+
+## Volumes/dados principais
+- Nextcloud app/config: `${NC_APP_VOLUME}`
+- Nextcloud dados: `${NC_DATA_VOLUME}`
+- Nextcloud DB (MariaDB): `${NC_DB_VOLUME}`
+- OnlyOffice PostgreSQL: `${OO_PG_VOLUME}`
+- OnlyOffice dados/logs/lib: `${OO_DATA_VOLUME}`, `${OO_LOGS_VOLUME}`, `${OO_LIB_VOLUME}`
+- `.env`: contém as senhas/segredos usados nos dumps e bootstrap.
+
+## Backup e migração com rclone
+- Script de backup (gera dumps + tar dos volumes e envia via rclone se configurado):
+  ```bash
+  bash scripts/backup-rclone.sh remote:backups/nextcloud-onlyoffice
+  ```
+  - Se não passar o remote, o backup fica em `/tmp/nc-oo-backup-<timestamp>` (ou `BACKUP_BASE=/caminho bash scripts/backup-rclone.sh`).
+  - Requer `rclone` instalado se for enviar para nuvem. Caso contrário, usa apenas o backup local.
+- Conteúdo do backup: dumps do MariaDB/PostgreSQL, tar.gz dos volumes e snapshot do `.env`.
+- Para migrar/restaurar: pare a stack, restaure os volumes a partir dos tar.gz e reimporte os dumps nos bancos, coloque o `.env` no host e suba com `docker compose up -d`.
 
 ## OnlyOffice no Nextcloud (configuração)
 - O bootstrap (`scripts/nextcloud-bootstrap.sh`) já aplica no Nextcloud:
