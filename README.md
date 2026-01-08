@@ -163,6 +163,14 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - macOS: Finder > Conectar ao servidor > `https://cloud.mms/remote.php/dav/files/SEU_USUARIO/`, use senha de app.
 - Linux: `davfs2` ou `curl`/`cadaver` com a mesma URL e senha de app.
 
+### Ajuste de brute force para redes internas
+- Para evitar atraso em logins na LAN, isente suas sub-redes e limpe tentativas pendentes:
+  ```bash
+  sudo docker exec -u www-data nc-app php occ config:system:set auth.bruteforce.protection.exempt_subnets --value="192.168.10.0/24,192.168.11.0/24,192.168.12.0/24,192.168.13.0/24,192.168.14.0/24,192.168.254.0/24"
+  source .env
+  sudo docker exec nc-db mariadb -u"$NC_DB_USER" -p"$NC_DB_PASSWORD" "$NC_DB_NAME" -e "TRUNCATE TABLE oc_bruteforce_attempts;"
+  ```
+
 ## Pré-requisitos
 - Docker + Docker Compose.
 - DNS interno apontando `cloud.mms` e `onlyoffice.mms` para o IP do host.
