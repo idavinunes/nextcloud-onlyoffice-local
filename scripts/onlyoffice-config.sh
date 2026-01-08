@@ -20,7 +20,7 @@ for v in "${required_vars[@]}"; do
     echo "Variável obrigatória ausente: ${v}. Ajuste o .env." >&2
     exit 1
   fi
-fi
+done
 
 CMD="
 cd /var/www/html && \
