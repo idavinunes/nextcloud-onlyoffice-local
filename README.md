@@ -3,7 +3,7 @@
 Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS assinado por CA interna. O tráfego externo chega via HTTPS no Nginx do host; a rede Docker `interna` fica restrita a HTTP.
 
 ## Arquitetura resumida
-- Nginx no host termina TLS (`nginx/cloud.mms.conf`, `nginx/onlyoffice.mms.conf`) com cert da CA interna.
+- Nginx no host termina TLS (`nginx/cloud.axisnetworks.conf`, `nginx/onlyoffice.axisnetworks.conf` ou os nomes que você usar) com cert da CA interna ou Let's Encrypt.
 - Serviços Nextcloud: `nc-app` (Apache) e `nc-cron` (tarefas em segundo plano), com MariaDB (`nc-db`) e Redis.
 - OnlyOffice Document Server com PostgreSQL (`oo-postgres`) e RabbitMQ (`oo-rabbitmq`).
 - Apenas `127.0.0.1:8080` (Nextcloud) e `127.0.0.1:8082` (OnlyOffice) ficam expostos; tudo mais permanece na rede Docker `interna`.
