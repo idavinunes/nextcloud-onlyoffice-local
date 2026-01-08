@@ -224,18 +224,46 @@ generate_ca_and_cert() {
   fi
 }
 
+obtain_lets_encrypt_cert() {
+  local cloud_domain="$1" oo_domain="$2"
+  local email
+  email="$(prompt_default "E-mail para Let's Encrypt (avisos de expiração)" "")"
+
+  if ! ask_yes_no "Emitir certificado Let's Encrypt (requer portas 80/443 públicas)?" "y"; then
+    echo "[warn] Let's Encrypt não solicitado; abortando modo internet."
+    exit 1
+  fi
+
+  ${SUDO} apt-get update
+  ${SUDO} apt-get install -y certbot
+
+  echo "[info] Parando Nginx (se rodando) para validação standalone..."
+  ${SUDO} systemctl stop nginx 2>/dev/null || true
+
+  local email_opts="--register-unsafely-without-email"
+  [ -n "${email}" ] && email_opts="-m ${email} --agree-tos"
+
+  if ! ${SUDO} certbot certonly --standalone --non-interactive ${email_opts} -d "${cloud_domain}" -d "${oo_domain}"; then
+    echo "[error] Falha ao emitir certificado Let's Encrypt. Verifique DNS e portas 80/443." >&2
+    exit 1
+  fi
+
+  echo "[info] Reiniciando Nginx (se aplicável)..."
+  ${SUDO} systemctl start nginx 2>/dev/null || true
+}
+
 render_nginx_conf() {
-  local template="$1" domain="$2" cert_dir="$3" output="$4"
+  local template="$1" domain="$2" cert_path="$3" key_path="$4" output="$5"
   ${SUDO} sed \
     -e "s/cloud\\.mms/${domain}/g" \
     -e "s/onlyoffice\\.mms/${domain}/g" \
-    -e "s#/opt/ssl/certs/mms.crt#${cert_dir}/mms.crt#g" \
-    -e "s#/opt/ssl/certs/mms.key#${cert_dir}/mms.key#g" \
+    -e "s#/opt/ssl/certs/mms.crt#${cert_path}#g" \
+    -e "s#/opt/ssl/certs/mms.key#${key_path}#g" \
     "${template}" | ${SUDO} tee "${output}" >/dev/null
 }
 
 configure_nginx() {
-  local cloud_domain="$1" oo_domain="$2" cert_dir="$3"
+  local cloud_domain="$1" oo_domain="$2" cert_path="$3" key_path="$4"
   if ! ask_yes_no "Instalar/atualizar Nginx com estas confs?" "y"; then
     return
   fi
@@ -247,8 +275,8 @@ configure_nginx() {
   local enabled="/etc/nginx/sites-enabled"
   ${SUDO} mkdir -p "${avail}" "${enabled}"
 
-  render_nginx_conf "${REPO_ROOT}/nginx/cloud.mms.conf" "${cloud_domain}" "${cert_dir}" "${avail}/${cloud_domain}.conf"
-  render_nginx_conf "${REPO_ROOT}/nginx/onlyoffice.mms.conf" "${oo_domain}" "${cert_dir}" "${avail}/${oo_domain}.conf"
+  render_nginx_conf "${REPO_ROOT}/nginx/cloud.mms.conf" "${cloud_domain}" "${cert_path}" "${key_path}" "${avail}/${cloud_domain}.conf"
+  render_nginx_conf "${REPO_ROOT}/nginx/onlyoffice.mms.conf" "${oo_domain}" "${cert_path}" "${key_path}" "${avail}/${oo_domain}.conf"
 
   ${SUDO} ln -sf "${avail}/${cloud_domain}.conf" "${enabled}/${cloud_domain}.conf"
   ${SUDO} ln -sf "${avail}/${oo_domain}.conf" "${enabled}/${oo_domain}.conf"
@@ -315,7 +343,7 @@ bring_up_stack() {
 
 main() {
   echo "=== Parâmetros ==="
-  local cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies
+  local cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path
   cloud_domain="$(prompt_default "Domínio do Nextcloud" "cloud.mms")"
   oo_domain="$(prompt_default "Domínio do OnlyOffice" "onlyoffice.mms")"
   base_dir="$(prompt_default "Diretório base único (dados/certs)" "/data/nextcloud-onlyoffice")"
@@ -323,6 +351,7 @@ main() {
   cert_dir="${base_dir}/certs"
   tz_value="$(prompt_default "Timezone (TZ)" "America/Sao_Paulo")"
   proxies="$(prompt_default "trusted_proxies (CSV)" "172.17.0.1,127.0.0.1")"
+  tls_mode="$(prompt_default "Modo TLS (local|internet)" "local")"
 
   prepare_data_disk
   ensure_docker
@@ -332,15 +361,32 @@ main() {
     "${data_root}/onlyoffice/postgres" "${data_root}/onlyoffice/data" "${data_root}/onlyoffice/logs" \
     "${data_root}/onlyoffice/lib" "${cert_dir}"
 
-  generate_ca_and_cert "${cert_dir}" "${cloud_domain},${oo_domain}"
+  if [ "${tls_mode}" = "internet" ]; then
+    obtain_lets_encrypt_cert "${cloud_domain}" "${oo_domain}"
+    cert_path="/etc/letsencrypt/live/${cloud_domain}/fullchain.pem"
+    key_path="/etc/letsencrypt/live/${cloud_domain}/privkey.pem"
+    if [ ! -f "${cert_path}" ] || [ ! -f "${key_path}" ]; then
+      echo "[error] Certificados Let's Encrypt não encontrados em ${cert_path}/${key_path}." >&2
+      exit 1
+    fi
+  else
+    generate_ca_and_cert "${cert_dir}" "${cloud_domain},${oo_domain}"
+    cert_path="${cert_dir}/mms.crt"
+    key_path="${cert_dir}/mms.key"
+  fi
+
   generate_env_file "${cloud_domain}" "${oo_domain}" "${data_root}" "${cert_dir}" "${tz_value}" "${proxies}"
-  configure_nginx "${cloud_domain}" "${oo_domain}" "${cert_dir}"
+  configure_nginx "${cloud_domain}" "${oo_domain}" "${cert_path}" "${key_path}"
 
   echo "=== Resumo ==="
   echo "Domínios: NC=${cloud_domain}, OO=${oo_domain}"
   echo "Base: ${base_dir}"
   echo "Volumes em: ${data_root}"
-  echo "Certificados: ${cert_dir}/mms.crt|key (CA: ${cert_dir}/lan-ca.crt)"
+  if [ "${tls_mode}" = "internet" ]; then
+    echo "Certificados: ${cert_path} | ${key_path} (Let's Encrypt)"
+  else
+    echo "Certificados: ${cert_path}|${key_path} (CA: ${cert_dir}/lan-ca.crt)"
+  fi
   echo ".env gerado (revise senhas/URLs se necessário)"
 
   bring_up_stack
