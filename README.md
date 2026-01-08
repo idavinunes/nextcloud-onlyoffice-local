@@ -81,6 +81,16 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
     - Nextcloud: `https://cloud.mms/status.php` e checar “Security & setup warnings”.
     - OnlyOffice: `https://onlyoffice.mms/healthcheck` e teste de edição via app OnlyOffice no Nextcloud.
 
+## Onde pegar a CA para clientes
+- Por padrão, o script gera a CA em `.../certs/lan-ca.crt` dentro do diretório base (ex.: `/data/nextcloud-onlyoffice/certs/lan-ca.crt`). Copie esse arquivo para os clientes.
+- Para facilitar, no host execute (ajuste se mudou o diretório base):
+  ```bash
+  cp /data/nextcloud-onlyoffice/certs/lan-ca.crt ~/lan-ca.crt
+  ```
+- Windows: executar `certmgr.msc` ou via MMC → “Trusted Root Certification Authorities” → Import → apontar para `lan-ca.crt`.
+- macOS: abrir “Acesso às Chaves” → Sistema → importar `lan-ca.crt` como “Sempre confiar”.
+- Linux: colocar em `/usr/local/share/ca-certificates/` e rodar `sudo update-ca-certificates`.
+
 ## Pré-requisitos
 - Docker + Docker Compose.
 - DNS interno apontando `cloud.mms` e `onlyoffice.mms` para o IP do host.
@@ -132,4 +142,3 @@ O contêiner `nc-app` roda `scripts/nextcloud-bootstrap.sh` a cada start para pa
 - Atualizar imagens: `docker compose pull && docker compose up -d`.
 - Cron: já roda no contêiner `nc-cron` (não use WebCron).
 - Segurança: cabeçalhos HSTS/nosniff já nas confs Nginx; mantenha as portas 8080/8082 apenas no loopback ou proteja via firewall se expor.
-
