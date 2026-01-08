@@ -344,8 +344,8 @@ bring_up_stack() {
 main() {
   echo "=== Parâmetros ==="
   local cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path
-  cloud_domain="$(prompt_default "Domínio do Nextcloud" "cloud.mms")"
-  oo_domain="$(prompt_default "Domínio do OnlyOffice" "onlyoffice.mms")"
+  cloud_domain="$(prompt_default "Domínio do Nextcloud" "cloud.axisnetworks")"
+  oo_domain="$(prompt_default "Domínio do OnlyOffice" "onlyoffice.axisnetworks")"
   base_dir="$(prompt_default "Diretório base único (dados/certs)" "/data/nextcloud-onlyoffice")"
   data_root="${base_dir}/data"
   cert_dir="${base_dir}/certs"
