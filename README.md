@@ -170,6 +170,15 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - macOS: Finder > Conectar ao servidor > `https://cloud.axisnetworks/remote.php/dav/files/SEU_USUARIO/`, use senha de app.
 - Linux: `davfs2` ou `curl`/`cadaver` com a mesma URL e senha de app.
 
+## Armazenamento externo (SMB/CIFS)
+- Ative o app “Armazenamento Externo” (files_external) no Nextcloud.
+- Para montar shares SMB, instale as libs SMB no contêiner (precisa repetir após atualizar a imagem, ou crie sua imagem customizada):
+  ```bash
+  bash scripts/install-smbclient.sh   # instala smbclient/libsmbclient/php-smbclient no nc-app
+  ```
+- Configure o mount na UI de admin (Configurações > Administração > Armazenamento externo): tipo SMB/CIFS, host/share, usuário/senha, pasta de montagem e visibilidade.
+- Se preferir montar o storage no host e usá-lo como dados principais, aponte `NC_DATA_VOLUME` para esse mount, mas garanta estabilidade da rede/storage; cotas do Nextcloud só se aplicam ao storage local/data dir.
+
 ### Ajuste de brute force para redes internas
 - Para evitar atraso em logins na LAN, isente suas sub-redes e limpe tentativas pendentes:
   ```bash
