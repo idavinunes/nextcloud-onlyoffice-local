@@ -351,7 +351,15 @@ main() {
   cert_dir="${base_dir}/certs"
   tz_value="$(prompt_default "Timezone (TZ)" "America/Sao_Paulo")"
   proxies="$(prompt_default "trusted_proxies (CSV)" "172.17.0.1,127.0.0.1")"
-  tls_mode="$(prompt_default "Modo TLS (local|internet)" "local")"
+  tls_mode="$(prompt_default "Modo TLS (local|internet)" "internet")"
+
+  if [ "${tls_mode}" = "local" ]; then
+    if ! echo "${cloud_domain}" | grep -Eiq '\.(local|lan)$'; then
+      if ! ask_yes_no "Você escolheu 'local' com domínio público (${cloud_domain}). Isso usará CA interna e exigirá instalar a CA nos clientes. Continuar?" "n"; then
+        tls_mode="internet"
+      fi
+    fi
+  fi
 
   prepare_data_disk
   ensure_docker
