@@ -142,6 +142,34 @@ ensure_network() {
   fi
 }
 
+update_stack() {
+  echo "=== Atualização ==="
+  ensure_docker
+  detect_docker_cmd
+  ensure_network
+
+  if ask_yes_no "Rodar backup (scripts/backup-rclone.sh) antes de atualizar?" "y"; then
+    read -r -p "Destino rclone (ex.: remote:backups/nc-oo) [vazio = só local]: " remote_target || true
+    if [ -x "${REPO_ROOT}/scripts/backup-rclone.sh" ]; then
+      BACKUP_BASE="${BACKUP_BASE:-/tmp}" bash "${REPO_ROOT}/scripts/backup-rclone.sh" "${remote_target}"
+    else
+      echo "[warn] Script de backup não encontrado em scripts/backup-rclone.sh; pulando."
+    fi
+  fi
+
+  echo "[info] Atualizando imagens..."
+  ${DOCKER_BIN} compose pull
+  echo "[info] Subindo stack..."
+  ${DOCKER_BIN} compose up -d
+
+  if ask_yes_no "Rodar occ upgrade (recomendado se Nextcloud foi atualizado)?" "y"; then
+    ${DOCKER_BIN} exec -u www-data nc-app php occ upgrade || true
+  fi
+
+  echo "[ok] Atualização concluída."
+  exit 0
+}
+
 create_dirs() {
   local dirs=("$@")
   for dir in "${dirs[@]}"; do
@@ -343,7 +371,12 @@ bring_up_stack() {
 
 main() {
   echo "=== Parâmetros ==="
-  local cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path
+  local action cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path
+  action="$(prompt_default "Ação (instalar|atualizar)" "instalar")"
+  if [ "${action}" = "atualizar" ]; then
+    update_stack
+  fi
+
   cloud_domain="$(prompt_default "Domínio do Nextcloud" "cloud.axisnetworks")"
   oo_domain="$(prompt_default "Domínio do OnlyOffice" "onlyoffice.axisnetworks")"
   base_dir="$(prompt_default "Diretório base único (dados/certs)" "/data/nextcloud-onlyoffice")"

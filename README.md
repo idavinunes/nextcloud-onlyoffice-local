@@ -9,7 +9,9 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Apenas `127.0.0.1:8080` (Nextcloud) e `127.0.0.1:8082` (OnlyOffice) ficam expostos; tudo mais permanece na rede Docker `interna`.
 
 ## Script assistente (Ubuntu 22.04)
-- Executa instalação do Docker/Compose, cria pastas de volumes, gera CA interna + certificado SAN, cria `.env` com senhas aleatórias, opcionalmente instala/ajusta Nginx e pode subir a stack.
+- Permite instalar ou atualizar:
+  - Instalação: Docker/Compose, pastas, CA interna ou Let’s Encrypt, `.env`, Nginx e subida da stack.
+  - Atualização: opcional backup (scripts/backup-rclone.sh), `docker compose pull`/`up -d` e occ upgrade opcional.
 - Pergunta se quer preparar um disco vazio para dados (formata/ext4 + monta em `/data` por padrão). Use só em disco vazio, pois apaga tudo.
 - Pergunta o modo TLS:
   - `local`: CA interna (requer instalar a CA nos clientes).
