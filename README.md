@@ -243,6 +243,17 @@ O contêiner `nc-app` roda `scripts/nextcloud-bootstrap.sh` a cada start para pa
 - Arquivos do host: `.env`, confs Nginx e certificados.
 - Restaure os volumes/arquivos no novo host, ajuste o `.env` e suba com `docker compose up -d`. O bootstrap reconfigura URLs/Trusted automaticamente.
 
+## Upgrade do stack
+- Automatizado: `bash scripts/setup-ubuntu22.sh` e escolha “atualizar” (backup opcional, `docker compose pull`/`up -d` e `occ upgrade`).
+- Manual:
+  ```bash
+  docker compose pull
+  docker compose up -d
+  sudo docker exec -u www-data nc-app php occ upgrade   # se Nextcloud foi atualizado
+  sudo docker exec -u www-data nc-app php occ maintenance:mode --off  # se necessário
+  ```
+- `upgrade.disable-web` permanece ativo por segurança; use o upgrade via CLI.
+
 ## Operação
 - Atualizar imagens: `docker compose pull && docker compose up -d`.
 - Cron: já roda no contêiner `nc-cron` (não use WebCron).
