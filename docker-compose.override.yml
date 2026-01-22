@@ -1,0 +1,12 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.nc-app
+    image: nextcloud:29-apache-smb
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.nc-app
+    image: nextcloud:29-apache-smb

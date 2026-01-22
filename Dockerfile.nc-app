@@ -1,0 +1,20 @@
+FROM nextcloud:29-apache
+
+# Instala dependências e compila a extensão smbclient via PECL
+RUN set -e \
+ && apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates lsb-release wget gnupg \
+      smbclient libsmbclient libsmbclient-dev gcc make autoconf pkg-config curl \
+ && wget -O /etc/apt/trusted.gpg.d/sury-php.gpg https://packages.sury.org/php/apt.gpg \
+ && echo "deb https://packages.sury.org/php bookworm main" > /etc/apt/sources.list.d/sury-php.list \
+ && apt-get update \
+ && curl -fsSL https://pear.php.net/go-pear.phar -o /tmp/go-pear.phar \
+ && yes "" | php /tmp/go-pear.phar \
+ && pecl channel-update pecl.php.net \
+ && printf '\n' | pecl install -f smbclient \
+ && mkdir -p /usr/local/etc/php/conf.d \
+ && echo 'extension=smbclient.so' > /usr/local/etc/php/conf.d/docker-php-ext-smbclient.ini \
+ && apt-get clean \
+ && rm -rf /var/lib/apt/lists/* /tmp/pear /tmp/go-pear.phar
+
