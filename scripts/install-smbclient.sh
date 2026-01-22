@@ -42,6 +42,11 @@ try_install_php_dev() {
   run "apt-get update >/dev/null 2>&1 && apt-get install -y --no-install-recommends ${dev_pkg} >/dev/null 2>&1"
 }
 
+try_install_php_dev_bookworm() {
+  local dev_pkg="$1"
+  run "apt-get update && apt-get install -y --no-install-recommends -t bookworm ${dev_pkg}"
+}
+
 echo "[info] instalando pacotes no contêiner ${CONTAINER}: ${pkgs_base} + ${php_pkg} (tentativa 1)"
 if ! try_install_pkg "${php_pkg}"; then
   echo "[warn] ${php_pkg} não disponível; tentando pacotes versionados..."
@@ -94,7 +99,7 @@ if ! try_install_pkg "${php_pkg}"; then
       echo "[warn] dev/pear não encontrados; habilitando bookworm e tentando novamente..."
       if add_bookworm_repo; then
         for dev in "${php_dev_candidates[@]}"; do
-          if try_install_php_dev "${dev}"; then
+          if try_install_php_dev_bookworm "${dev}"; then
             install_cmd="${install_cmd} ${dev}"
             found_pkg="1"
             break
