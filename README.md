@@ -38,6 +38,8 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
    ```bash
    git clone https://github.com/idavinunes/nextcloud-onlyoffice-local.git
    cd nextcloud-onlyoffice-local
+   # se quiser usar a imagem custom com smbclient (branch develop):
+   git checkout develop
    ```
 3. Preparar disco de dados (recomendado)
    - Identifique o disco: `lsblk`
