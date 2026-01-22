@@ -177,6 +177,14 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   DOCKER_BIN="docker" bash scripts/install-smbclient.sh   # se precisar de sudo: DOCKER_BIN="sudo docker" bash ...
   ```
 - Se o `apt` não encontrar `php-smbclient`/`php-pear`, use uma imagem do Nextcloud baseada em Debian estável: defina `NC_IMAGE=nextcloud:29-apache` (ou outra tag estável disponível, ex. `nextcloud:apache-bullseye`) no `.env` e recrie `app/cron`.
+- Branch develop: já existe um override (`docker-compose.override.yml`) que builda a imagem `nextcloud:32-apache-smb` com o smbclient pré-instalado. Para usar:
+  ```bash
+  # em ambiente de teste
+  git checkout develop && git pull
+  docker compose --env-file .env -f docker-compose.yml -f docker-compose.override.yml build app cron
+  docker compose --env-file .env -f docker-compose.yml -f docker-compose.override.yml up -d app cron
+  docker exec -u www-data nc-app php -m | grep smbclient   # deve mostrar smbclient
+  ```
 - Configure o mount na UI de admin (Configurações > Administração > Armazenamento externo): tipo SMB/CIFS, host/share, usuário/senha, pasta de montagem e visibilidade.
 - Se preferir montar o storage no host e usá-lo como dados principais, aponte `NC_DATA_VOLUME` para esse mount, mas garanta estabilidade da rede/storage; cotas do Nextcloud só se aplicam ao storage local/data dir.
 
