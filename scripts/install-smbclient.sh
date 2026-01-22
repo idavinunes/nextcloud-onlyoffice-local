@@ -30,18 +30,25 @@ if ! ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "apt-get update && apt-get insta
     echo "[warn] Pacotes binários não disponíveis; tentando compilar via pecl..."
     build_pkgs_base="smbclient libsmbclient-dev gcc make autoconf pkg-config"
     php_dev_candidates=()
-    [ -n "${php_ver}" ] && php_dev_candidates+=("php${php_ver}-dev")
-    php_dev_candidates+=("php-pear" "php-dev")
+    [ -n "${php_ver}" ] && php_dev_candidates+=("php${php_ver}-dev" "php${php_ver}-pear")
+    php_dev_candidates+=("php8.3-dev" "php8.3-pear" "php8.2-dev" "php8.2-pear" "php8.1-dev" "php8.1-pear" "php8.0-dev" "php8.0-pear" "php-dev" "php-pear")
     install_cmd="apt-get update && apt-get install -y --no-install-recommends ${build_pkgs_base}"
+    found_pkg=""
     for dev in "${php_dev_candidates[@]}"; do
-      install_cmd="${install_cmd} ${dev}"
+      if ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "apt-get update >/dev/null 2>&1 && apt-get install -y --no-install-recommends ${dev} >/dev/null 2>&1"; then
+        install_cmd="${install_cmd} ${dev}"
+        found_pkg="1"
+        break
+      fi
     done
-    if ! ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "${install_cmd} && rm -rf /var/lib/apt/lists/*"; then
+    if [ -z "${found_pkg}" ]; then
       echo \"[error] Não foi possível instalar dependências de build para smbclient via pecl.\" >&2
       exit 1
     fi
-    ${DOCKER_BIN} exec "${CONTAINER}" pecl install smbclient
-    ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "echo 'extension=smbclient.so' > /usr/local/etc/php/conf.d/docker-php-ext-smbclient.ini"
+    if ! ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "${install_cmd} && rm -rf /var/lib/apt/lists/* && pecl install smbclient && echo 'extension=smbclient.so' > /usr/local/etc/php/conf.d/docker-php-ext-smbclient.ini"; then
+      echo \"[error] Falha ao compilar smbclient via pecl.\" >&2
+      exit 1
+    fi
     installed=1
   fi
 fi
