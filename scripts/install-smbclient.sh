@@ -17,7 +17,7 @@ if ! ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "apt-get update && apt-get insta
   php_ver=$(${DOCKER_BIN} exec "${CONTAINER}" php -r 'echo PHP_MAJOR_VERSION;".";echo PHP_MINOR_VERSION;' 2>/dev/null || echo "")
   candidates=()
   [ -n "${php_ver}" ] && candidates+=("php${php_ver}-smbclient")
-  candidates+=("php8.2-smbclient" "php8.1-smbclient" "php8.0-smbclient")
+  candidates+=("php8.4-smbclient" "php8.3-smbclient" "php8.2-smbclient" "php8.1-smbclient" "php8.0-smbclient")
   installed=0
   for cand in "${candidates[@]}"; do
     echo "[info] tentando ${cand}"
@@ -31,7 +31,7 @@ if ! ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "apt-get update && apt-get insta
     build_pkgs_base="smbclient libsmbclient-dev gcc make autoconf pkg-config"
     php_dev_candidates=()
     [ -n "${php_ver}" ] && php_dev_candidates+=("php${php_ver}-dev" "php${php_ver}-pear")
-    php_dev_candidates+=("php8.3-dev" "php8.3-pear" "php8.2-dev" "php8.2-pear" "php8.1-dev" "php8.1-pear" "php8.0-dev" "php8.0-pear" "php-dev" "php-pear")
+    php_dev_candidates+=("php8.4-dev" "php8.4-pear" "php8.3-dev" "php8.3-pear" "php8.2-dev" "php8.2-pear" "php8.1-dev" "php8.1-pear" "php8.0-dev" "php8.0-pear" "php-dev" "php-pear")
     install_cmd="apt-get update && apt-get install -y --no-install-recommends ${build_pkgs_base}"
     found_pkg=""
     for dev in "${php_dev_candidates[@]}"; do
