@@ -40,6 +40,9 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
    cd nextcloud-onlyoffice-local
    # se quiser usar a imagem custom com smbclient (branch develop):
    git checkout develop
+   # e subir com o override que faz o build da imagem custom:
+   docker compose --env-file .env -f docker-compose.yml -f docker-compose.override.yml build app cron
+   docker compose --env-file .env -f docker-compose.yml -f docker-compose.override.yml up -d app cron
    ```
 3. Preparar disco de dados (recomendado)
    - Identifique o disco: `lsblk`
