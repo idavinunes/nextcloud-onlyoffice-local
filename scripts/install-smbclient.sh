@@ -32,6 +32,26 @@ EOF
   "
 }
 
+add_sury_repo() {
+  # Repositório Sury para pacotes PHP (inclui php-smbclient/php-pear) quando o
+  # repo padrão não fornece. Usamos bookworm por ser estável e suportado.
+  run "set -e
+    if [ -f /etc/apt/sources.list.d/sury-php.list ]; then
+      exit 0
+    fi
+    apt-get update || true
+    apt-get install -y --no-install-recommends ca-certificates lsb-release wget gnupg
+    wget -O /etc/apt/trusted.gpg.d/sury-php.gpg https://packages.sury.org/php/apt.gpg
+    codename=\$(lsb_release -sc 2>/dev/null || true)
+    case \"\$codename\" in
+      bookworm|bullseye|buster) true ;;
+      *) codename=bookworm ;;
+    esac
+    echo \"deb https://packages.sury.org/php/ \$codename main\" >/etc/apt/sources.list.d/sury-php.list
+    apt-get update
+  "
+}
+
 try_install_pkg() {
   local pkg="$1"
   run "apt-get update && apt-get install -y --no-install-recommends ${pkgs_base} ${pkg} && rm -rf /var/lib/apt/lists/*"
@@ -100,6 +120,18 @@ if ! try_install_pkg "${php_pkg}"; then
       if add_bookworm_repo; then
         for dev in "${php_dev_candidates[@]}"; do
           if try_install_php_dev_bookworm "${dev}"; then
+            install_cmd="${install_cmd} ${dev}"
+            found_pkg="1"
+            break
+          fi
+        done
+      fi
+    fi
+    if [ -z "${found_pkg}" ]; then
+      echo "[warn] dev/pear ainda ausentes; habilitando repositório Sury e tentando..."
+      if add_sury_repo; then
+        for dev in "${php_dev_candidates[@]}"; do
+          if try_install_php_dev "${dev}"; then
             install_cmd="${install_cmd} ${dev}"
             found_pkg="1"
             break
