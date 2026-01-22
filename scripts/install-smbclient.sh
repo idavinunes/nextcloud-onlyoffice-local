@@ -27,8 +27,12 @@ if ! ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "apt-get update && apt-get insta
     fi
   done
   if [ "${installed}" -ne 1 ]; then
-    echo "[error] Não foi possível instalar php-smbclient. Verifique se o repositório padrão (Debian bookworm/trixie) está habilitado no contêiner e tente novamente."
-    exit 1
+    echo "[warn] Pacotes binários não disponíveis; tentando compilar via pecl..."
+    build_pkgs="smbclient libsmbclient-dev php-dev php-pear gcc make autoconf pkg-config"
+    ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "apt-get update && apt-get install -y --no-install-recommends ${build_pkgs} && rm -rf /var/lib/apt/lists/*"
+    ${DOCKER_BIN} exec "${CONTAINER}" pecl install smbclient
+    ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "echo 'extension=smbclient.so' > /usr/local/etc/php/conf.d/docker-php-ext-smbclient.ini"
+    installed=1
   fi
 fi
 
