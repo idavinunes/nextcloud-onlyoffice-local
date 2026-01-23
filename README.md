@@ -193,6 +193,24 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Configure o mount na UI de admin (Configurações > Administração > Armazenamento externo): tipo SMB/CIFS, host/share, usuário/senha, pasta de montagem e visibilidade.
 - Se preferir montar o storage no host e usá-lo como dados principais, aponte `NC_DATA_VOLUME` para esse mount, mas garanta estabilidade da rede/storage; cotas do Nextcloud só se aplicam ao storage local/data dir.
 
+### Fulltextsearch (opcional, override develop)
+- No override `docker-compose.override.yml` há um serviço `elasticsearch` (rede interna, sem portas expostas). Ajuste `ES_DATA_VOLUME` no `.env` se quiser persistir.
+- Instale/ative os apps:
+  ```bash
+  docker exec -u www-data nc-app php occ app:install fulltextsearch fulltextsearch_elasticsearch files_fulltextsearch
+  docker exec -u www-data nc-app php occ app:enable fulltextsearch fulltextsearch_elasticsearch files_fulltextsearch
+  ```
+- Configure o backend (usando o serviço interno):
+  ```bash
+  docker exec -u www-data nc-app php occ config:app:set fulltextsearch platform --value "OCA\\FullTextSearch_Elasticsearch\\Platform\\ElasticSearchPlatform"
+  docker exec -u www-data nc-app php occ config:app:set fulltextsearch_elasticsearch servers --value "http://elasticsearch:9200"
+  ```
+- Indexe:
+  ```bash
+  docker exec -u www-data nc-app php occ fulltextsearch:index
+  ```
+  Para produção, habilite TLS/usuário no Elasticsearch e ajuste a URL/verify na configuração.
+
 ## Apps recomendados (instalação rápida)
 - Script para instalar/ativar apps base (ajuste a lista em `scripts/install-apps-base.sh`):
   ```bash
