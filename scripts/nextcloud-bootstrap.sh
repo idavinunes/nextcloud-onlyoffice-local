@@ -9,6 +9,14 @@ php occ config:system:set overwrite.cli.url --value="${NC_OVERWRITE_CLI_URL}"
 php occ config:system:set overwritehost --value="${NC_OVERWRITE_HOST}"
 php occ config:system:set overwriteprotocol --value="${NC_OVERWRITE_PROTOCOL}"
 
+# idioma padrão (aplicado no primeiro login de novos usuários)
+if [ -n "${NC_DEFAULT_LANGUAGE:-}" ]; then
+  php occ config:system:set default_language --value="${NC_DEFAULT_LANGUAGE}"
+fi
+if [ -n "${NC_DEFAULT_LOCALE:-}" ]; then
+  php occ config:system:set default_locale --value="${NC_DEFAULT_LOCALE}"
+fi
+
 # trusted_domains (suporta lista separada por vírgula)
 trusted_domains="${NC_TRUSTED_DOMAINS:-${NC_OVERWRITE_HOST:-}}"
 if [ -n "${trusted_domains}" ]; then
