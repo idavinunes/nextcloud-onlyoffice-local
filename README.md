@@ -201,6 +201,12 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Lista padrão no script: `logreader`, `admin_audit`, `files_external`, `external` (Sites externos), `client_push`, `groupfolders`.
 - Para SMB, rode antes `bash scripts/install-smbclient.sh` (instala libs SMB no contêiner).
 - Busca full-text (opcional): requer subir Solr/Elasticsearch e instalar `fulltextsearch` + `fulltextsearch_files` (não automatizado aqui).
+- Impersonate (acessar a conta de um usuário para suporte/limpeza de arquivos): admin pode instalar/ativar com
+  ```bash
+  docker exec -u www-data nc-app php occ app:install impersonate
+  docker exec -u www-data nc-app php occ app:enable impersonate
+  ```
+  Depois, na UI (Configurações → Usuários), no menu “…” de um usuário escolha **Impersonar**. Saia para voltar à sua sessão. Por padrão, só admin pode usar; restrinja/autorize grupos em Configurações → Segurança → Impersonate.
 
 ### Ajuste de brute force para redes internas
 - Para evitar atraso em logins na LAN, isente suas sub-redes e limpe tentativas pendentes:
