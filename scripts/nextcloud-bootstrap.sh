@@ -52,6 +52,18 @@ php occ config:system:set memcache.locking --value="\\OC\\Memcache\\Redis"
 php occ config:system:set redis host --value="${REDIS_HOST:-redis}"
 php occ config:system:set redis port --type=integer --value="${REDIS_PORT:-6379}"
 
+# Ajuste de OPcache (tune default se variáveis existirem, senão usa defaults)
+opcache_memory="${OPCACHE_MEMORY:-512}"
+opcache_interned="${OPCACHE_INTERNED_STRINGS:-16}"
+opcache_max_files="${OPCACHE_MAX_ACCELERATED_FILES:-100000}"
+cat >/usr/local/etc/php/conf.d/opcache-tune.ini <<EOF
+opcache.memory_consumption=${opcache_memory}
+opcache.interned_strings_buffer=${opcache_interned}
+opcache.max_accelerated_files=${opcache_max_files}
+opcache.validate_timestamps=1
+opcache.revalidate_freq=60
+EOF
+
 echo "[bootstrap] ensuring OnlyOffice app installed/enabled..."
 php occ app:enable onlyoffice || { php occ app:install onlyoffice && php occ app:enable onlyoffice; }
 

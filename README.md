@@ -211,6 +211,7 @@ Copie `.env.example` para `.env` e ajuste:
 - `NC_TRUSTED_PROXIES`: IP do host Docker (geralmente `172.17.0.1`) e `127.0.0.1`.
 - `OO_PUBLIC_URL`, `OO_INTERNAL_URL`, `NC_INTERNAL_URL`: URLs externa e internas do Document Server.
 - `OO_JWT_SECRET`: segredo longo e aleatório (`openssl rand -hex 32`).
+- `OPCACHE_MEMORY` / `OPCACHE_INTERNED_STRINGS` / `OPCACHE_MAX_ACCELERATED_FILES`: tunar o OPcache (padrão 512 MB, 16, 100000).
 - `NC_DEFAULT_LANGUAGE` / `NC_DEFAULT_LOCALE`: idioma padrão no primeiro login (ex.: `pt_BR`).
 - `TZ`: timezone compartilhado pelos serviços.
 
