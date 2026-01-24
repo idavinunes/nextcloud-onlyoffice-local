@@ -178,6 +178,14 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   ```
 - Configure o mount na UI de admin (Configurações > Administração > Armazenamento externo): tipo SMB/CIFS, host/share, usuário/senha, pasta de montagem e visibilidade.
 - Se preferir montar o storage no host e usá-lo como dados principais, aponte `NC_DATA_VOLUME` para esse mount, mas garanta estabilidade da rede/storage; cotas do Nextcloud só se aplicam ao storage local/data dir.
+- Para ambientes locais usando CIFS montado no host, faça o mount no host e só repasse a pasta para o contêiner. Exemplo:
+  ```bash
+  sudo mkdir -p /mnt/ncdata
+  # Use credfile para não deixar senha em texto: cat >/root/.smb-cred <<EOF\nusername=USUARIO\npassword=SENHA\nEOF\nchmod 600 /root/.smb-cred
+  sudo mount -t cifs //srvarquivos/share /mnt/ncdata \
+    -o vers=3.0,credentials=/root/.smb-cred,uid=33,gid=33,file_mode=0770,dir_mode=0770
+  ```
+  Depois ajuste `NC_DATA_VOLUME=/mnt/ncdata` no `.env` e rode `docker compose up -d` (ou um override de volume) para usar esse caminho dentro do contêiner.
 
 ## Apps recomendados (instalação rápida)
 - Script para instalar/ativar apps base (ajuste a lista em `scripts/install-apps-base.sh`):
