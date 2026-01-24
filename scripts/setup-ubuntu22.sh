@@ -303,6 +303,15 @@ obtain_lets_encrypt_cert() {
   echo "[info] Parando Nginx (se rodando) para validação standalone..."
   ${SUDO} systemctl stop nginx 2>/dev/null || true
 
+  local blockers
+  blockers="$(${SUDO} ss -ltnp 2>/dev/null | grep -E ':80\\b|:443\\b' || true)"
+  if [ -n "${blockers}" ]; then
+    echo "[error] Portas 80/443 ainda estão em uso; libere antes de prosseguir (Let's Encrypt precisa dessas portas)." >&2
+    echo "${blockers}"
+    echo "[hint] Pare serviços/listeners acima (ex.: apache2/nginx/outro container) ou escolha o modo TLS 'local' para usar CA interna." >&2
+    exit 1
+  fi
+
   local email_opts="--register-unsafely-without-email"
   [ -n "${email}" ] && email_opts="-m ${email} --agree-tos"
 

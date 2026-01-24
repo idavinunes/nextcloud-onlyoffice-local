@@ -16,6 +16,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Pergunta o modo TLS:
   - `local`: CA interna (requer instalar a CA nos clientes).
   - `internet`: emite Let’s Encrypt (necessário domínio público + portas 80/443 abertas; usa certbot standalone e depois aplica nas confs Nginx).
+- Para Let’s Encrypt, libere as portas 80/443 no host (pare Nginx/Apache/containers que estejam escutando) antes de rodar o setup; se não puder parar, use o modo `local`.
 - Rode na raiz do repo:
   ```bash
   bash scripts/setup-ubuntu22.sh
