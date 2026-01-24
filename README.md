@@ -20,7 +20,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   ```bash
   bash scripts/setup-ubuntu22.sh
   ```
-- Responde às perguntas (domínios, diretório base único, trusted proxies). Ele organiza tudo abaixo do diretório base (padrão `/data/nextcloud-onlyoffice`: `.../data` para volumes e `.../certs` para CA/cert). Domínios padrão sugeridos: `cloud.axisnetworks` (Nextcloud) e `onlyoffice.axisnetworks` (OnlyOffice). Se instalar Docker, será preciso relogar para o grupo `docker`.
+- Responde às perguntas (domínios, diretório base único, trusted proxies). Ele organiza tudo abaixo do diretório base (padrão `/data/nc-oo`: volumes na raiz e `.../certs` para CA/cert). Domínios padrão sugeridos: `cloud.axisnetworks` (Nextcloud) e `onlyoffice.axisnetworks` (OnlyOffice). Se instalar Docker, será preciso relogar para o grupo `docker`.
 
 ## Passo a passo - Ubuntu 22.04
 1. Docker/Compose
@@ -56,11 +56,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
    - Se usar outro ponto, ajuste os caminhos no `.env` ou use o setup script para gerar tudo sob um diretório base.
 4. Criar pastas de dados/volumes (se não usar o script para criá-las; ajuste se mudar o diretório base):
    ```bash
-   sudo mkdir -p /data/nextcloud-onlyoffice/data/nc-db
-   sudo mkdir -p /data/nextcloud-onlyoffice/data/nc-app
-   sudo mkdir -p /data/nextcloud-onlyoffice/data/nextcloud/data
-   sudo mkdir -p /data/nextcloud-onlyoffice/data/onlyoffice/{postgres,data,logs,lib}
-   sudo mkdir -p /data/nextcloud-onlyoffice/certs
+   sudo mkdir -p /data/nc-oo/{nc-db,nc-app,nc-data,oo-pg,oo-data,oo-logs,oo-lib,certs}
    ```
 4. Gerar CA interna (uma vez) e instalar em todos os clientes (Windows/macOS/Linux) e no host:
    ```bash
@@ -105,10 +101,10 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
     - OnlyOffice: `https://onlyoffice.axisnetworks/healthcheck` e teste de edição via app OnlyOffice no Nextcloud.
 
 ## Onde pegar a CA para clientes
-- Por padrão, o script gera a CA em `.../certs/lan-ca.crt` dentro do diretório base (ex.: `/data/nextcloud-onlyoffice/certs/lan-ca.crt`). Copie esse arquivo para os clientes.
+- Por padrão, o script gera a CA em `.../certs/lan-ca.crt` dentro do diretório base (ex.: `/data/nc-oo/certs/lan-ca.crt`). Copie esse arquivo para os clientes.
 - Para facilitar, no host execute (ajuste se mudou o diretório base):
   ```bash
-  cp /data/nextcloud-onlyoffice/certs/lan-ca.crt ~/lan-ca.crt
+  cp /data/nc-oo/certs/lan-ca.crt ~/lan-ca.crt
   ```
 - Windows: executar `certmgr.msc` ou via MMC → “Trusted Root Certification Authorities” → Import → apontar para `lan-ca.crt`.
 - macOS: abrir “Acesso às Chaves” → Sistema → importar `lan-ca.crt` como “Sempre confiar”.
@@ -121,6 +117,8 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - OnlyOffice PostgreSQL: `${OO_PG_VOLUME}`
 - OnlyOffice dados/logs/lib: `${OO_DATA_VOLUME}`, `${OO_LOGS_VOLUME}`, `${OO_LIB_VOLUME}`
 - `.env`: contém as senhas/segredos usados nos dumps e bootstrap.
+- Padrão do setup script: diretório base `/data/nc-oo` com volumes achatados (`nc-db`, `nc-app`, `nc-data`, `oo-pg`, `oo-data`, `oo-logs`, `oo-lib`) e certs em `.../certs`.
+- O setup aplica `chown 33:33` em `nc-app`/`nc-data` e tenta dar ACL de leitura/escrita para o usuário que executa o script (para backup via host/rclone). Em filesystems sem ACL (ex.: CIFS sem suporte), monte com `uid=33,gid=33,file_mode=0770,dir_mode=0770` ou ajuste as opções de mount conforme a seção de CIFS abaixo.
 
 ## Backup e migração com rclone
 - Script de backup (gera dumps + tar dos volumes e envia via rclone se configurado):

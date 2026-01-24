@@ -177,6 +177,41 @@ create_dirs() {
   done
 }
 
+ensure_acl_tool() {
+  if command -v setfacl >/dev/null 2>&1; then
+    return
+  fi
+  echo "[info] Instalando suporte a ACL (acl) para acesso via host..."
+  ${SUDO} apt-get update
+  ${SUDO} apt-get install -y acl
+}
+
+grant_host_access() {
+  local target_dir="$1" host_user="$2"
+  ensure_acl_tool
+  if [ -z "${host_user}" ]; then
+    return
+  fi
+  if ! id -u "${host_user}" >/dev/null 2>&1; then
+    return
+  fi
+  echo "[info] Concedendo ACL para ${host_user} em ${target_dir}"
+  if ! ${SUDO} setfacl -R -m "u:${host_user}:rwX" "${target_dir}"; then
+    echo "[warn] Não foi possível aplicar ACL em ${target_dir} (filesystem suporta ACL?)." >&2
+  fi
+  if ! ${SUDO} setfacl -d -m "u:${host_user}:rwX" "${target_dir}"; then
+    echo "[warn] Não foi possível aplicar ACL default em ${target_dir}." >&2
+  fi
+}
+
+ensure_wwwdata_owner() {
+  local dirs=("$@")
+  for dir in "${dirs[@]}"; do
+    ${SUDO} chown -R 33:33 "${dir}" 2>/dev/null || true
+    ${SUDO} chmod 0770 "${dir}" 2>/dev/null || true
+  done
+}
+
 render_san_cfg() {
   local file="$1" domains_csv="$2" idx=1
   {
@@ -333,19 +368,19 @@ TZ=${tz_value}
 NC_HTTP_PORT=8080
 OO_HTTP_PORT=8082
 
-NC_DB_ROOT_PASSWORD=${db_root}
-NC_DB_NAME=nextcloud
-NC_DB_USER=ncuser
-NC_DB_PASSWORD=${db_pass}
+  NC_DB_ROOT_PASSWORD=${db_root}
+  NC_DB_NAME=nextcloud
+  NC_DB_USER=ncuser
+  NC_DB_PASSWORD=${db_pass}
 
-NC_DB_VOLUME=${data_root}/nc-db
-NC_APP_VOLUME=${data_root}/nc-app
-NC_DATA_VOLUME=${data_root}/nextcloud/data
+  NC_DB_VOLUME=${data_root}/nc-db
+  NC_APP_VOLUME=${data_root}/nc-app
+  NC_DATA_VOLUME=${data_root}/nc-data
 
-OO_PG_VOLUME=${data_root}/onlyoffice/postgres
-OO_DATA_VOLUME=${data_root}/onlyoffice/data
-OO_LOGS_VOLUME=${data_root}/onlyoffice/logs
-OO_LIB_VOLUME=${data_root}/onlyoffice/lib
+  OO_PG_VOLUME=${data_root}/oo-pg
+  OO_DATA_VOLUME=${data_root}/oo-data
+  OO_LOGS_VOLUME=${data_root}/oo-logs
+  OO_LIB_VOLUME=${data_root}/oo-lib
 
 NC_OVERWRITE_CLI_URL=https://${cloud_domain}
 NC_OVERWRITE_HOST=${cloud_domain}
@@ -371,7 +406,7 @@ bring_up_stack() {
 
 main() {
   echo "=== Parâmetros ==="
-  local action cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path
+  local action cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path host_user
   action="$(prompt_default "Ação (instalar|atualizar)" "instalar")"
   if [ "${action}" = "atualizar" ]; then
     update_stack
@@ -379,12 +414,13 @@ main() {
 
   cloud_domain="$(prompt_default "Domínio do Nextcloud" "cloud.axisnetworks")"
   oo_domain="$(prompt_default "Domínio do OnlyOffice" "onlyoffice.axisnetworks")"
-  base_dir="$(prompt_default "Diretório base único (dados/certs)" "/data/nextcloud-onlyoffice")"
-  data_root="${base_dir}/data"
+  base_dir="$(prompt_default "Diretório base único (dados/certs)" "/data/nc-oo")"
+  data_root="${base_dir}"
   cert_dir="${base_dir}/certs"
   tz_value="$(prompt_default "Timezone (TZ)" "America/Sao_Paulo")"
   proxies="$(prompt_default "trusted_proxies (CSV)" "172.17.0.1,127.0.0.1")"
   tls_mode="$(prompt_default "Modo TLS (local|internet)" "internet")"
+  host_user="${SUDO_USER:-${USER}}"
 
   if [ "${tls_mode}" = "local" ]; then
     if ! echo "${cloud_domain}" | grep -Eiq '\.(local|lan)$'; then
@@ -398,9 +434,11 @@ main() {
   ensure_docker
   detect_docker_cmd
   ensure_network
-  create_dirs "${data_root}/nc-db" "${data_root}/nc-app" "${data_root}/nextcloud/data" \
-    "${data_root}/onlyoffice/postgres" "${data_root}/onlyoffice/data" "${data_root}/onlyoffice/logs" \
-    "${data_root}/onlyoffice/lib" "${cert_dir}"
+  create_dirs "${data_root}/nc-db" "${data_root}/nc-app" "${data_root}/nc-data" \
+    "${data_root}/oo-pg" "${data_root}/oo-data" "${data_root}/oo-logs" \
+    "${data_root}/oo-lib" "${cert_dir}"
+  ensure_wwwdata_owner "${data_root}/nc-app" "${data_root}/nc-data"
+  grant_host_access "${data_root}/nc-data" "${host_user}"
 
   if [ "${tls_mode}" = "internet" ]; then
     obtain_lets_encrypt_cert "${cloud_domain}" "${oo_domain}"
