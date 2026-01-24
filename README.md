@@ -260,3 +260,15 @@ O contêiner `nc-app` roda `scripts/nextcloud-bootstrap.sh` a cada start para pa
 - Atualizar imagens: `docker compose pull && docker compose up -d`.
 - Cron: já roda no contêiner `nc-cron` (não use WebCron).
 - Segurança: cabeçalhos HSTS/nosniff já nas confs Nginx; mantenha as portas 8080/8082 apenas no loopback ou proteja via firewall se expor.
+
+## Comandos úteis (occ)
+Rode sempre como `www-data` no contêiner: `docker exec -u www-data nc-app php occ <comando>`.
+- `status`: mostra versão, modo de manutenção e caminho de dados.
+- `trashbin:cleanup --all-users`: limpa lixeira de todos os usuários respeitando a retenção configurada.
+- `versions:cleanup`: remove versões antigas de arquivos conforme política de retenção.
+- `files:cleanup`: remove entradas órfãs do filecache (após exclusões manuais).
+- `files:scan --all` (ou `--path user/files/alguma_pasta`): reindexa arquivos após mover algo fora do Nextcloud; use somente quando necessário.
+- `maintenance:repair`: roda reparos comuns (índices, shares, storages inconsistentes).
+- `db:add-missing-indices`: cria índices que faltam (executar após upgrades quando o log sugerir).
+- `db:convert-filecache-bigint`: converte colunas do filecache para bigint (rodar uma vez; pode ser demorado).
+- `app:update --all`: atualiza apps instalados após atualizar o Nextcloud.
