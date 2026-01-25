@@ -84,6 +84,9 @@ opcache.max_accelerated_files=${opcache_max_files}
 opcache.validate_timestamps=1
 opcache.revalidate_freq=60
 EOF
+# Ajuste de memory_limit (default 768M; pode ser alterado via PHP_MEMORY_LIMIT)
+php_memory_limit="${PHP_MEMORY_LIMIT:-768M}"
+echo "memory_limit=${php_memory_limit}" >/usr/local/etc/php/conf.d/memory-limit.ini
 
 echo "[bootstrap] ensuring OnlyOffice app installed/enabled..."
 if ! occ app:enable onlyoffice >/dev/null 2>&1; then
