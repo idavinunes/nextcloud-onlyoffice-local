@@ -203,7 +203,8 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Ajuste `MAINT_WINDOW_START` no `.env` se quiser outro horário (padrão 1 = 01:00).
 - O script também lembra sobre AppAPI (Ex-Apps), Talk HPB/TURN e cabeçalhos Forwarded (necessários no proxy).
 
-### Ajuste de brute force para redes internas
+### Ajuste de brute force para redes internas (apenas LAN confiável)
+- Use somente em ambiente local controlado; não aplique em Nextcloud exposto à internet.
 - Para evitar atraso em logins na LAN, isente suas sub-redes e limpe tentativas pendentes:
   ```bash
   sudo docker exec -u www-data nc-app php occ config:system:set auth.bruteforce.protection.exempt_subnets --value="192.168.10.0/24,192.168.11.0/24,192.168.12.0/24,192.168.13.0/24,192.168.14.0/24,192.168.254.0/24,172.255.255.0/24"
