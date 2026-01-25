@@ -375,7 +375,7 @@ generate_env_file() {
 
   cat > "${env_file}" <<EOF
 TZ=${tz_value}
-NEXTCLOUD_IMAGE=${NEXTCLOUD_IMAGE:-nextcloud:28-apache}
+NEXTCLOUD_IMAGE=${NEXTCLOUD_IMAGE:-nextcloud:29-apache}
 NC_HTTP_PORT=8080
 OO_HTTP_PORT=8082
 
