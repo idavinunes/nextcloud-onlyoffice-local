@@ -26,7 +26,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Perfis de proxy (prompt do setup):
   - `internet`: uso padrão com domínio público (pode usar Let’s Encrypt).
   - `local`: TLS com CA interna para LAN.
-  - `cloudflare`: igual ao internet, mas já aplica real IP da Cloudflare via `scripts/cloudflare-realip.sh` no Nginx.
+- `cloudflare`: igual ao internet, mas já aplica real IP da Cloudflare via `scripts/cloudflare-realip.sh` no Nginx.
 
 ## Passo a passo - Ubuntu 22.04
 1. Docker/Compose
@@ -249,14 +249,44 @@ Copie `.env.example` para `.env` e ajuste:
 4. Recarregue o Nginx do host: `sudo nginx -t && sudo systemctl reload nginx` (o setup já chama reload; repita se ajustar algo).
 5. As confs já incluem redirects de `/.well-known/caldav|carddav` para `/remote.php/dav`, cabeçalhos `X-Content-Type-Options`/`X-Frame-Options`/HSTS e cabeçalho `Forwarded`/`X-Forwarded-*`.
 
-### Cloudflare como proxy reverso
-- Ative `real_ip` para preservar o IP do cliente e confiar no proxy. No host, rode:
+### Cloudflare como proxy reverso (Internet ou LAN com túnel)
+- Real IP no Nginx (já automático ao escolher o perfil cloudflare no setup):
   ```bash
   sudo bash scripts/cloudflare-realip.sh
   sudo nginx -t && sudo systemctl reload nginx
   ```
-  Isso cria `/etc/nginx/conf.d/cloudflare-realip.conf` com `set_real_ip_from`/`real_ip_header CF-Connecting-IP`.
-- Mantenha `NC_TRUSTED_PROXIES` com o IP do host/proxy (padrão já cobre 172.17.0.1,127.0.0.1) e `overwriteprotocol=https` (o pós-install aplica).
+  Cria `/etc/nginx/conf.d/cloudflare-realip.conf` com `set_real_ip_from` e `real_ip_header CF-Connecting-IP`.
+- Nextcloud: `trusted_proxies` e `overwriteprotocol=https` são aplicados no pós-install.
+- Se usar túnel do Cloudflare em LAN (sem abrir portas), faça manualmente após o setup:
+  ```bash
+  # instalar cloudflared
+  sudo mkdir -p /usr/local/bin
+  sudo curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 -o /usr/local/bin/cloudflared
+  sudo chmod +x /usr/local/bin/cloudflared
+  cloudflared --version
+
+  # login e criação do túnel (etapa interativa abre link/código)
+  cloudflared tunnel login
+  cloudflared tunnel create nextcloud-tunel   # guarde o Tunnel ID e credencial JSON
+
+  # config do túnel (ajuste domínios/ports)
+  cat > ~/.cloudflared/config.yml <<'EOF'
+  tunnel: nextcloud-tunel
+  credentials-file: /root/.cloudflared/<credencial>.json
+
+  ingress:
+    - hostname: cloud.seudominio.com
+      service: http://127.0.0.1:8080
+    - hostname: onlyoffice.seudominio.com
+      service: http://127.0.0.1:8082
+    - service: http_status:404
+  EOF
+
+  # rodar o túnel (ou instalar como serviço)
+  cloudflared tunnel run nextcloud-tunel
+  # opcional: cloudflared service install
+  ```
+  Depois crie CNAMEs na Cloudflare apontando para o domínio do túnel (`xxx.cfargotunnel.com`) com proxy laranja ativo.
 
 ## Subir a stack
 ```bash
