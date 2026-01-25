@@ -279,3 +279,18 @@ Rode sempre como `www-data` no contêiner: `docker exec -u www-data nc-app php o
 - `db:add-missing-indices`: cria índices que faltam (executar após upgrades quando o log sugerir).
 - `db:convert-filecache-bigint`: converte colunas do filecache para bigint (rodar uma vez; pode ser demorado).
 - `app:update --all`: atualiza apps instalados após atualizar o Nextcloud.
+
+## Avisos comuns e como resolver rápido
+- **AppAPI deploy daemon**: se não usa Ex-Apps, ignore. Caso contrário, instale/ative o app `app_api` e configure um daemon em Configurações > Administração > Aplicativos Externos.
+- **Cabeçalhos Forwarded for**: garanta `NC_TRUSTED_PROXIES` e `NC_OVERWRITE_*` corretos no `.env` e recarregue o Nginx do host. Se precisar, adicione no vhost:
+  ```
+  proxy_set_header Forwarded "for=$proxy_add_x_forwarded_for;host=$host;proto=$scheme";
+  proxy_set_header X-Forwarded-Proto $scheme;
+  proxy_set_header X-Forwarded-Host $host;
+  proxy_set_header X-Forwarded-For  $proxy_add_x_forwarded_for;
+  ```
+- **Back-end de alto desempenho (Talk)**: sem HPB/TURN o Talk limita a 2–3 usuários. Suba signaling + TURN e configure (`talk:signaling:...` e `talk:turn:add`). Se não usar Talk com grupos, ignore.
+- **Janela de manutenção**: defina um horário de baixo uso:
+  `docker exec -u www-data nc-app php occ config:system:set maintenance_window_start --value=1` (1=01:00).
+- **Migrações de mimetype**: `docker exec -u www-data nc-app php occ maintenance:repair --include-expensive`.
+- **Client Push**: instale/ative: `bash scripts/install-apps-base.sh` (já inclui `client_push`).
