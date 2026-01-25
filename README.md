@@ -245,6 +245,15 @@ Copie `.env.example` para `.env` e ajuste:
 4. Recarregue o Nginx do host: `sudo nginx -t && sudo systemctl reload nginx` (o setup já chama reload; repita se ajustar algo).
 5. As confs já incluem redirects de `/.well-known/caldav|carddav` para `/remote.php/dav`, cabeçalhos `X-Content-Type-Options`/`X-Frame-Options`/HSTS e cabeçalho `Forwarded`/`X-Forwarded-*`.
 
+### Cloudflare como proxy reverso
+- Ative `real_ip` para preservar o IP do cliente e confiar no proxy. No host, rode:
+  ```bash
+  sudo bash scripts/cloudflare-realip.sh
+  sudo nginx -t && sudo systemctl reload nginx
+  ```
+  Isso cria `/etc/nginx/conf.d/cloudflare-realip.conf` com `set_real_ip_from`/`real_ip_header CF-Connecting-IP`.
+- Mantenha `NC_TRUSTED_PROXIES` com o IP do host/proxy (padrão já cobre 172.17.0.1,127.0.0.1) e `overwriteprotocol=https` (o pós-install aplica).
+
 ## Subir a stack
 ```bash
 cp .env.example .env   # e edite conforme acima
