@@ -229,6 +229,7 @@ Copie `.env.example` para `.env` e ajuste:
 - `NC_OVERWRITE_*`: URLs externas (HTTPS) usadas pelo Nextcloud.
 - `NC_TRUSTED_DOMAINS`: domínios permitidos (vírgula para múltiplos).
 - `NC_TRUSTED_PROXIES`: IP do host Docker (geralmente `172.17.0.1`) e `127.0.0.1`.
+- `NC_TRUSTED_PROXIES` e headers no proxy: as confs Nginx já incluem Forwarded/X-Forwarded-*; mantenha `NC_TRUSTED_PROXIES` com o IP do host/proxy e recarregue o Nginx após copiar as confs.
 - `OO_PUBLIC_URL`, `OO_INTERNAL_URL`, `NC_INTERNAL_URL`: URLs externa e internas do Document Server.
 - `OO_JWT_SECRET`: segredo longo e aleatório (`openssl rand -hex 32`).
 - `NC_DEFAULT_PHONE_REGION`: código de país ISO (ex.: BR) para validar números; usado no pós-install.
