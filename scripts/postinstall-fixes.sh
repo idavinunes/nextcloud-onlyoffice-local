@@ -24,7 +24,7 @@ set +a
 DOCKER_BIN="${DOCKER_BIN:-docker}"
 CONTAINER="${CONTAINER:-nc-app}"
 MAINT_WINDOW_START="${MAINT_WINDOW_START:-1}" # 1 = 01:00
-CLIENT_PUSH_VER="${CLIENT_PUSH_VER:-0.8.0}"
+CLIENT_PUSH_VER="${CLIENT_PUSH_VER:-}"
 
 occ() {
   ${DOCKER_BIN} exec -u www-data "${CONTAINER}" php occ "$@"
@@ -43,12 +43,25 @@ install_app "client_push"
 install_app "notifications"
 install_app "app_api"
 if ! occ app:list | grep -q '^Enabled:.*client_push'; then
-  echo "[warn] client_push via appstore falhou; tentando fallback v${CLIENT_PUSH_VER}"
+  # Detecta versão do NC para escolher o tarball
+  nc_ver="$(occ status 2>/dev/null | awk -F': ' '/versionstring/ {print $2}' | head -n1)"
+  nc_major="${nc_ver%%.*}"
+  fallback_ver="${CLIENT_PUSH_VER}"
+  if [ -z "${fallback_ver}" ]; then
+    case "${nc_major}" in
+      32) fallback_ver="0.8.0" ;;
+      31) fallback_ver="0.7.0" ;;
+      30) fallback_ver="0.7.0" ;;
+      29) fallback_ver="0.6.0" ;;
+      *) fallback_ver="0.8.0" ;;
+    esac
+  fi
+  echo "[warn] client_push via appstore falhou; tentando fallback v${fallback_ver} (Nextcloud ${nc_ver:-desconhecido})"
   ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "
     set -e
     cd /tmp
-    curl -LO https://github.com/nextcloud-releases/client_push/releases/download/v${CLIENT_PUSH_VER}/client_push-${CLIENT_PUSH_VER}.tar.gz
-    tar -xf client_push-${CLIENT_PUSH_VER}.tar.gz -C /var/www/html/apps
+    curl -LO https://github.com/nextcloud-releases/client_push/releases/download/v${fallback_ver}/client_push-${fallback_ver}.tar.gz
+    tar -xf client_push-${fallback_ver}.tar.gz -C /var/www/html/apps
     chown -R www-data:www-data /var/www/html/apps/client_push
   "
   occ app:enable client_push || true
