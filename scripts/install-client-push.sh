@@ -38,13 +38,16 @@ if occ app:install client_push && occ app:enable client_push; then
 fi
 
 echo "[warn] appstore falhou; tentando fallback manual com client_push v${TARGET_VER}."
-${DOCKER_BIN} exec "${CONTAINER}" bash -lc "
+if ! ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "
   set -e
   cd /tmp
-  curl -LO https://github.com/nextcloud-releases/client_push/releases/download/v${TARGET_VER}/client_push-${TARGET_VER}.tar.gz
+  curl -fLO https://github.com/nextcloud-releases/client_push/releases/download/v${TARGET_VER}/client_push-${TARGET_VER}.tar.gz
   tar -xf client_push-${TARGET_VER}.tar.gz -C /var/www/html/apps
   chown -R www-data:www-data /var/www/html/apps/client_push
-"
+"; then
+  echo "[error] download/extração do client_push v${TARGET_VER} falhou (URL/versão não encontrada?). Ajuste VER/CLIENT_PUSH_VER ou verifique appstore." >&2
+  exit 1
+fi
 
 occ app:enable client_push
 echo "[ok] client_push instalado/ativado (tarball v${TARGET_VER})."

@@ -57,14 +57,17 @@ if ! occ app:list | grep -q '^Enabled:.*client_push'; then
     esac
   fi
   echo "[warn] client_push via appstore falhou; tentando fallback v${fallback_ver} (Nextcloud ${nc_ver:-desconhecido})"
-  ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "
+  if ! ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "
     set -e
     cd /tmp
-    curl -LO https://github.com/nextcloud-releases/client_push/releases/download/v${fallback_ver}/client_push-${fallback_ver}.tar.gz
+    curl -fLO https://github.com/nextcloud-releases/client_push/releases/download/v${fallback_ver}/client_push-${fallback_ver}.tar.gz
     tar -xf client_push-${fallback_ver}.tar.gz -C /var/www/html/apps
     chown -R www-data:www-data /var/www/html/apps/client_push
-  "
-  occ app:enable client_push || true
+  "; then
+    echo "[warn] fallback client_push v${fallback_ver} não pôde ser baixado/aplicado (URL/versão ausente?). Ajuste CLIENT_PUSH_VER ou tente appstore novamente." >&2
+  else
+    occ app:enable client_push || true
+  fi
 fi
 
 echo "[info] definindo maintenance_window_start=${MAINT_WINDOW_START}"
