@@ -336,7 +336,8 @@ render_nginx_conf() {
 
 configure_nginx() {
   local cloud_domain="$1" oo_domain="$2" cert_path="$3" key_path="$4"
-  if ! ask_yes_no "Instalar/atualizar Nginx com estas confs?" "y"; then
+  if [ "${SKIP_NGINX_CONFIG:-}" = "1" ]; then
+    echo "[info] SKIP_NGINX_CONFIG=1 — pulando configuração do Nginx."
     return
   fi
   if ! command -v nginx >/dev/null 2>&1; then
