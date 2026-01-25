@@ -51,10 +51,10 @@ if ! occ app:list | grep -q '^Enabled:.*client_push'; then
   if [ -z "${fallback_ver}" ]; then
     case "${nc_major}" in
       32) fallback_ver="0.8.0" ;;
-      31) fallback_ver="0.7.0" ;;
-      30) fallback_ver="0.7.0" ;;
-      29) fallback_ver="0.6.0" ;;
-      *) fallback_ver="0.8.0" ;;
+      31|30) fallback_ver="0.7.0" ;;
+      29|28) fallback_ver="0.6.0" ;;
+      27) fallback_ver="0.5.0" ;;
+      *) fallback_ver="0.6.0" ;;
     esac
   fi
   echo "[warn] client_push via appstore falhou; tentando fallback v${fallback_ver} (Nextcloud ${nc_ver:-desconhecido})"

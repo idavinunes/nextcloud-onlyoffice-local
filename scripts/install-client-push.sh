@@ -20,10 +20,10 @@ pick_client_push_ver() {
   nc_major="${nc_ver%%.*}"
   case "${nc_major}" in
     32) echo "0.8.0" ;;
-    31) echo "0.7.0" ;;
-    30) echo "0.7.0" ;;
-    29) echo "0.6.0" ;;
-    *) echo "${default}" ;;
+    31|30) echo "0.7.0" ;;
+    29|28) echo "0.6.0" ;;
+    27) echo "0.5.0" ;;
+    *) echo "${default:-0.6.0}" ;;
   esac
 }
 
