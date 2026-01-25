@@ -4,6 +4,7 @@ set -euo pipefail
 # Roteiro rápido para avisos comuns pós-instalação.
 # Faz:
 # - instala/habilita client_push e notifications;
+# - tenta instalar app_api (para silenciar aviso do AppAPI, se necessário);
 # - define maintenance_window_start (padrão 1 = 01:00);
 # - roda maintenance:repair --include-expensive;
 # - lembra de AppAPI e Talk HPB/TURN se necessário.
@@ -39,6 +40,7 @@ echo "[info] usando contêiner ${CONTAINER} via ${DOCKER_BIN}"
 
 install_app "client_push"
 install_app "notifications"
+install_app "app_api"
 
 echo "[info] definindo maintenance_window_start=${MAINT_WINDOW_START}"
 occ config:system:set maintenance_window_start --value="${MAINT_WINDOW_START}"
@@ -48,7 +50,7 @@ occ maintenance:repair --include-expensive
 
 cat <<'EOF'
 [info] Feito.
-- AppAPI: se for usar Ex-Apps, instale/ative app_api e configure o daemon em Configurações > Administração > Aplicativos Externos.
+- AppAPI: se for usar Ex-Apps, configure o daemon em Configurações > Administração > Aplicativos Externos (app_api já foi instalado/habilitado).
 - Talk: para chamadas com vários participantes, suba HPB + TURN e configure pelo occ talk:signaling/talk:turn.
 - Cabeçalhos Forwarded: garanta trusted_proxies/overwrite* corretos e proxy com X-Forwarded-*.
 EOF

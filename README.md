@@ -201,7 +201,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   bash scripts/postinstall-fixes.sh   # usa nc-app como contêiner padrão
   ```
 - Ajuste `MAINT_WINDOW_START` no `.env` se quiser outro horário (padrão 1 = 01:00).
-- O script também lembra sobre AppAPI (Ex-Apps), Talk HPB/TURN e cabeçalhos Forwarded (necessários no proxy).
+- O script também instala `app_api` e lembra sobre configurar o daemon (Ex-Apps), Talk HPB/TURN e cabeçalhos Forwarded (necessários no proxy).
 
 ### Ajuste de brute force para redes internas (apenas LAN confiável)
 - Use somente em ambiente local controlado; não aplique em Nextcloud exposto à internet.
