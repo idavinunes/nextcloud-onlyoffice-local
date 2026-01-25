@@ -10,7 +10,6 @@ APPS=(
   "admin_audit"
   "files_external"
   "external"
-  "client_push"
   "groupfolders"
   "analytics"
   "bruteforcesettings"

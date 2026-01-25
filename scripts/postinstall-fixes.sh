@@ -24,6 +24,7 @@ set +a
 DOCKER_BIN="${DOCKER_BIN:-docker}"
 CONTAINER="${CONTAINER:-nc-app}"
 MAINT_WINDOW_START="${MAINT_WINDOW_START:-1}" # 1 = 01:00
+CLIENT_PUSH_VER="${CLIENT_PUSH_VER:-0.8.0}"
 
 occ() {
   ${DOCKER_BIN} exec -u www-data "${CONTAINER}" php occ "$@"
@@ -41,6 +42,17 @@ echo "[info] usando contêiner ${CONTAINER} via ${DOCKER_BIN}"
 install_app "client_push"
 install_app "notifications"
 install_app "app_api"
+if ! occ app:list | grep -q '^Enabled:.*client_push'; then
+  echo "[warn] client_push via appstore falhou; tentando fallback v${CLIENT_PUSH_VER}"
+  ${DOCKER_BIN} exec "${CONTAINER}" bash -lc "
+    set -e
+    cd /tmp
+    curl -LO https://github.com/nextcloud-releases/client_push/releases/download/v${CLIENT_PUSH_VER}/client_push-${CLIENT_PUSH_VER}.tar.gz
+    tar -xf client_push-${CLIENT_PUSH_VER}.tar.gz -C /var/www/html/apps
+    chown -R www-data:www-data /var/www/html/apps/client_push
+  "
+  occ app:enable client_push || true
+fi
 
 echo "[info] definindo maintenance_window_start=${MAINT_WINDOW_START}"
 occ config:system:set maintenance_window_start --value="${MAINT_WINDOW_START}"

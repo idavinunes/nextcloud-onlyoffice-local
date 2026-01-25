@@ -191,7 +191,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   ```bash
   bash scripts/install-apps-base.sh
   ```
-- Lista padrão no script: `logreader`, `admin_audit`, `files_external`, `external` (Sites externos), `client_push`, `groupfolders`, `analytics`, `bruteforcesettings`, `calendar`, `contacts`, `mail`, `monitoring`, `notifications`, `password_policy`, `passwords`, `photos`, `privacy`, `recommendations`, `text`, `twofactor_totp`, `user_status`, `versions`, `weather_status`.
+- Lista padrão no script: `logreader`, `admin_audit`, `files_external`, `external` (Sites externos), `groupfolders`, `analytics`, `bruteforcesettings`, `calendar`, `contacts`, `mail`, `monitoring`, `notifications`, `password_policy`, `passwords`, `photos`, `privacy`, `recommendations`, `text`, `twofactor_totp`, `user_status`, `versions`, `weather_status`.
 - Para SMB, rode antes `bash scripts/install-smbclient.sh` (instala libs SMB no contêiner).
 - Busca full-text (opcional): requer subir Solr/Elasticsearch e instalar `fulltextsearch` + `fulltextsearch_files` (não automatizado aqui).
 
@@ -201,7 +201,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   bash scripts/postinstall-fixes.sh   # usa nc-app como contêiner padrão
   ```
 - Ajuste `MAINT_WINDOW_START` no `.env` se quiser outro horário (padrão 1 = 01:00).
-- O script também instala `app_api` e lembra sobre configurar o daemon (Ex-Apps), Talk HPB/TURN e cabeçalhos Forwarded (necessários no proxy).
+- O script também instala `app_api` e lembra sobre configurar o daemon (Ex-Apps), Talk HPB/TURN e cabeçalhos Forwarded (necessários no proxy). Se o client_push falhar na appstore, ele tenta fallback com tarball (`CLIENT_PUSH_VER` ajustável, padrão 0.8.0 para NC 32).
 
 ### Ajuste de brute force para redes internas (apenas LAN confiável)
 - Use somente em ambiente local controlado; não aplique em Nextcloud exposto à internet.
