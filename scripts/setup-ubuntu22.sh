@@ -420,7 +420,7 @@ bring_up_stack() {
 
 main() {
   echo "=== Parâmetros ==="
-  local action cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path host_user admin_user admin_pass phone_region
+  local action cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path host_user admin_user admin_pass phone_region proxy_profile
   action="$(prompt_default "Ação (instalar|atualizar)" "instalar")"
   if [ "${action}" = "atualizar" ]; then
     update_stack
@@ -434,6 +434,7 @@ main() {
   tz_value="$(prompt_default "Timezone (TZ)" "America/Sao_Paulo")"
   proxies="$(prompt_default "trusted_proxies (CSV)" "172.17.0.1,127.0.0.1")"
   tls_mode="$(prompt_default "Modo TLS (local|internet)" "internet")"
+  proxy_profile="$(prompt_default "Perfil de proxy (internet|local|cloudflare)" "internet")"
   host_user="${SUDO_USER:-${USER}}"
   admin_user="$(prompt_default "Criar admin automaticamente? Usuário (vazio = configurar via UI)" "")"
   admin_pass=""
@@ -477,6 +478,15 @@ main() {
 
   generate_env_file "${cloud_domain}" "${oo_domain}" "${data_root}" "${cert_dir}" "${tz_value}" "${proxies}"
   configure_nginx "${cloud_domain}" "${oo_domain}" "${cert_path}" "${key_path}"
+
+  if [ "${proxy_profile}" = "cloudflare" ]; then
+    if [ -x "${REPO_ROOT}/scripts/cloudflare-realip.sh" ]; then
+      echo "[info] Aplicando real_ip da Cloudflare..."
+      SUDO="${SUDO}" "${REPO_ROOT}/scripts/cloudflare-realip.sh"
+    else
+      echo "[warn] scripts/cloudflare-realip.sh não encontrado ou sem permissão de execução; aplique manualmente o real_ip para Cloudflare."
+    fi
+  fi
 
   echo "=== Resumo ==="
   echo "Domínios: NC=${cloud_domain}, OO=${oo_domain}"
