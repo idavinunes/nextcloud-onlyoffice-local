@@ -486,6 +486,30 @@ main() {
     else
       echo "[warn] scripts/cloudflare-realip.sh não encontrado ou sem permissão de execução; aplique manualmente o real_ip para Cloudflare."
     fi
+    # Gera config.yml de exemplo para cloudflared
+    if command -v cloudflared >/dev/null 2>&1; then
+      cf_dir="${HOME}/.cloudflared"
+      ${SUDO} mkdir -p "${cf_dir}"
+      cat > "${cf_dir}/config.yml" <<EOF
+# Exemplo de config para cloudflared (ajuste tunnel/credenciais/hostnames)
+tunnel: nextcloud-tunel
+credentials-file: ${cf_dir}/<credencial>.json
+
+ingress:
+  - hostname: ${cloud_domain}
+    service: http://127.0.0.1:${NC_HTTP_PORT:-8080}
+  - hostname: ${oo_domain}
+    service: http://127.0.0.1:${OO_HTTP_PORT:-8082}
+  - service: http_status:404
+EOF
+      echo "[info] config.yml de exemplo gerado em ${cf_dir}/config.yml (ajuste tunnel/credencial/hostnames se necessário)."
+      echo "[info] Lembretes Cloudflare:"
+      echo " - cloudflared tunnel login (etapa interativa) e cloudflared tunnel create <nome>"
+      echo " - Ajuste credentials-file no config.yml para o JSON criado"
+      echo " - Crie CNAMEs na zona Cloudflare: ${cloud_domain} e ${oo_domain} apontando para <tunnel>.cfargotunnel.com (proxy laranja)"
+    else
+      echo "[warn] cloudflared não está instalado; instale e configure o túnel manualmente conforme README."
+    fi
   fi
 
   echo "=== Resumo ==="
