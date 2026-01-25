@@ -26,6 +26,7 @@ CONTAINER="${CONTAINER:-nc-app}"
 MAINT_WINDOW_START="${MAINT_WINDOW_START:-1}" # 1 = 01:00
 CLIENT_PUSH_VER="${CLIENT_PUSH_VER:-}"
 DEFAULT_PHONE_REGION="${NC_DEFAULT_PHONE_REGION:-${DEFAULT_PHONE_REGION:-BR}}"
+DEFAULT_TRUSTED_PROXIES="${NC_TRUSTED_PROXIES:-172.17.0.1,127.0.0.1}"
 
 occ() {
   ${DOCKER_BIN} exec -u www-data "${CONTAINER}" php occ "$@"
@@ -78,6 +79,20 @@ if [ -n "${DEFAULT_PHONE_REGION}" ]; then
   echo "[info] definindo default_phone_region=${DEFAULT_PHONE_REGION}"
   occ config:system:set default_phone_region --value="${DEFAULT_PHONE_REGION}"
 fi
+
+if [ -n "${DEFAULT_TRUSTED_PROXIES}" ]; then
+  echo "[info] definindo trusted_proxies=${DEFAULT_TRUSTED_PROXIES}"
+  IFS=',' read -r -a tps <<<"${DEFAULT_TRUSTED_PROXIES}"
+  idx=0
+  for tp in "${tps[@]}"; do
+    clean_tp="$(echo "${tp}" | xargs)"
+    [ -n "${clean_tp}" ] && occ config:system:set trusted_proxies "${idx}" --value="${clean_tp}"
+    idx=$((idx + 1))
+  done
+fi
+
+echo "[info] forçando overwriteprotocol=https"
+occ config:system:set overwriteprotocol --value="https"
 
 echo "[info] rodando maintenance:repair --include-expensive (mimetypes, etc.)"
 occ maintenance:repair --include-expensive

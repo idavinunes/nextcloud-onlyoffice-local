@@ -204,6 +204,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Ajuste `MAINT_WINDOW_START` no `.env` se quiser outro horário (padrão 1 = 01:00).
 - O script também instala `app_api` e lembra sobre configurar o daemon (Ex-Apps), Talk HPB/TURN e cabeçalhos Forwarded (necessários no proxy). Se o client_push falhar na appstore, ele tenta fallback com tarball (detecta a versão do Nextcloud e escolhe a release adequada; permite sobrescrever com `CLIENT_PUSH_VER=...`). Se a URL não existir, apenas alerta.
 - Define `default_phone_region` (usa `NC_DEFAULT_PHONE_REGION`, padrão BR) e roda `db:add-missing-indices` + `maintenance:repair --include-expensive`.
+- Define `trusted_proxies` (usa `NC_TRUSTED_PROXIES` ou padrão `172.17.0.1,127.0.0.1`) e força `overwriteprotocol=https` para evitar aviso de proxy reverso.
 
 ### Ajuste de brute force para redes internas (apenas LAN confiável)
 - Use somente em ambiente local controlado; não aplique em Nextcloud exposto à internet.
