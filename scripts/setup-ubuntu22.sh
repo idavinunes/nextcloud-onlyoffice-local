@@ -402,6 +402,8 @@ OO_PUBLIC_URL=https://${oo_domain}/
 OO_INTERNAL_URL=http://onlyoffice/
 NC_INTERNAL_URL=http://app/
 OO_JWT_SECRET=${jwt_secret}
+NEXTCLOUD_ADMIN_USER=${admin_user}
+NEXTCLOUD_ADMIN_PASSWORD=${admin_pass}
 EOF
   echo "[ok] .env gerado com senhas/segredos aleatórios."
 }
@@ -416,7 +418,7 @@ bring_up_stack() {
 
 main() {
   echo "=== Parâmetros ==="
-  local action cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path host_user
+  local action cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path host_user admin_user admin_pass
   action="$(prompt_default "Ação (instalar|atualizar)" "instalar")"
   if [ "${action}" = "atualizar" ]; then
     update_stack
@@ -431,6 +433,12 @@ main() {
   proxies="$(prompt_default "trusted_proxies (CSV)" "172.17.0.1,127.0.0.1")"
   tls_mode="$(prompt_default "Modo TLS (local|internet)" "internet")"
   host_user="${SUDO_USER:-${USER}}"
+  admin_user="$(prompt_default "Criar admin automaticamente? Usuário (vazio = configurar via UI)" "")"
+  admin_pass=""
+  if [ -n "${admin_user}" ]; then
+    read -r -s -p "Senha do admin: " admin_pass || true
+    echo
+  fi
 
   if [ "${tls_mode}" = "local" ]; then
     if ! echo "${cloud_domain}" | grep -Eiq '\.(local|lan)$'; then

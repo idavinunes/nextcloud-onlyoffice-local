@@ -222,6 +222,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 ## Configuração rápida (.env)
 Copie `.env.example` para `.env` e ajuste:
 - `NEXTCLOUD_IMAGE`: imagem/tag do Nextcloud; padrão `nextcloud:27-apache` (LTS). Ajuste para atualizar, mas evite downgrade de dados.
+- `NEXTCLOUD_ADMIN_USER` / `NEXTCLOUD_ADMIN_PASSWORD`: defina para criar o admin automaticamente na primeira inicialização. Se deixar em branco, a UI pedirá usuário/senha na tela de instalação.
 - `NC_DB_ROOT_PASSWORD`, `NC_DB_PASSWORD`: senhas do MariaDB.
 - Volumes (`/data/...`): paths persistentes no host para Nextcloud e OnlyOffice.
 - `NC_OVERWRITE_*`: URLs externas (HTTPS) usadas pelo Nextcloud.
