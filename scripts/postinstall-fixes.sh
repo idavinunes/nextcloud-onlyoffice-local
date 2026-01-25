@@ -25,6 +25,7 @@ DOCKER_BIN="${DOCKER_BIN:-docker}"
 CONTAINER="${CONTAINER:-nc-app}"
 MAINT_WINDOW_START="${MAINT_WINDOW_START:-1}" # 1 = 01:00
 CLIENT_PUSH_VER="${CLIENT_PUSH_VER:-}"
+DEFAULT_PHONE_REGION="${NC_DEFAULT_PHONE_REGION:-${DEFAULT_PHONE_REGION:-BR}}"
 
 occ() {
   ${DOCKER_BIN} exec -u www-data "${CONTAINER}" php occ "$@"
@@ -73,12 +74,21 @@ fi
 echo "[info] definindo maintenance_window_start=${MAINT_WINDOW_START}"
 occ config:system:set maintenance_window_start --value="${MAINT_WINDOW_START}"
 
+if [ -n "${DEFAULT_PHONE_REGION}" ]; then
+  echo "[info] definindo default_phone_region=${DEFAULT_PHONE_REGION}"
+  occ config:system:set default_phone_region --value="${DEFAULT_PHONE_REGION}"
+fi
+
 echo "[info] rodando maintenance:repair --include-expensive (mimetypes, etc.)"
 occ maintenance:repair --include-expensive
+echo "[info] rodando db:add-missing-indices"
+occ db:add-missing-indices || true
 
 cat <<'EOF'
 [info] Feito.
 - AppAPI: se for usar Ex-Apps, configure o daemon em Configurações > Administração > Aplicativos Externos (app_api já foi instalado/habilitado).
 - Talk: para chamadas com vários participantes, suba HPB + TURN e configure pelo occ talk:signaling/talk:turn.
 - Cabeçalhos Forwarded: garanta trusted_proxies/overwrite* corretos e proxy com X-Forwarded-*.
+- WebDAV CalDAV/CardDAV: já há rewrites no Nginx de host (/.well-known/caldav|carddav -> /remote.php/dav). Recarregue o Nginx após aplicar as confs.
+- E-mail: configure SMTP em Configurações > Básicas ou via occ (mail_smtpmode/host/port/etc.) e use mail:test.
 EOF

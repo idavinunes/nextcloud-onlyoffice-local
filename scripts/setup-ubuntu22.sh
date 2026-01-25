@@ -404,6 +404,7 @@ NC_INTERNAL_URL=http://app/
 OO_JWT_SECRET=${jwt_secret}
 NEXTCLOUD_ADMIN_USER=${admin_user}
 NEXTCLOUD_ADMIN_PASSWORD=${admin_pass}
+NC_DEFAULT_PHONE_REGION=${phone_region}
 EOF
   echo "[ok] .env gerado com senhas/segredos aleatórios."
 }
@@ -418,7 +419,7 @@ bring_up_stack() {
 
 main() {
   echo "=== Parâmetros ==="
-  local action cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path host_user admin_user admin_pass
+  local action cloud_domain oo_domain base_dir data_root cert_dir tz_value proxies tls_mode cert_path key_path host_user admin_user admin_pass phone_region
   action="$(prompt_default "Ação (instalar|atualizar)" "instalar")"
   if [ "${action}" = "atualizar" ]; then
     update_stack
@@ -439,6 +440,7 @@ main() {
     read -r -s -p "Senha do admin: " admin_pass || true
     echo
   fi
+  phone_region="$(prompt_default "default_phone_region (código ISO, ex.: BR)" "BR")"
 
   if [ "${tls_mode}" = "local" ]; then
     if ! echo "${cloud_domain}" | grep -Eiq '\.(local|lan)$'; then

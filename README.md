@@ -203,6 +203,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   ```
 - Ajuste `MAINT_WINDOW_START` no `.env` se quiser outro horário (padrão 1 = 01:00).
 - O script também instala `app_api` e lembra sobre configurar o daemon (Ex-Apps), Talk HPB/TURN e cabeçalhos Forwarded (necessários no proxy). Se o client_push falhar na appstore, ele tenta fallback com tarball (detecta a versão do Nextcloud e escolhe a release adequada; permite sobrescrever com `CLIENT_PUSH_VER=...`). Se a URL não existir, apenas alerta.
+- Define `default_phone_region` (usa `NC_DEFAULT_PHONE_REGION`, padrão BR) e roda `db:add-missing-indices` + `maintenance:repair --include-expensive`.
 
 ### Ajuste de brute force para redes internas (apenas LAN confiável)
 - Use somente em ambiente local controlado; não aplique em Nextcloud exposto à internet.
@@ -230,6 +231,7 @@ Copie `.env.example` para `.env` e ajuste:
 - `NC_TRUSTED_PROXIES`: IP do host Docker (geralmente `172.17.0.1`) e `127.0.0.1`.
 - `OO_PUBLIC_URL`, `OO_INTERNAL_URL`, `NC_INTERNAL_URL`: URLs externa e internas do Document Server.
 - `OO_JWT_SECRET`: segredo longo e aleatório (`openssl rand -hex 32`).
+- `NC_DEFAULT_PHONE_REGION`: código de país ISO (ex.: BR) para validar números; usado no pós-install.
 - `OPCACHE_MEMORY` / `OPCACHE_INTERNED_STRINGS` / `OPCACHE_MAX_ACCELERATED_FILES`: tunar o OPcache (padrão 512 MB, 16, 100000).
 - `NC_DEFAULT_LANGUAGE` / `NC_DEFAULT_LOCALE`: idioma padrão no primeiro login (ex.: `pt_BR`).
 - `TZ`: timezone compartilhado pelos serviços.
@@ -238,6 +240,7 @@ Copie `.env.example` para `.env` e ajuste:
 1. Edite `nginx/cloud.axisnetworks.conf` e `nginx/onlyoffice.axisnetworks.conf` (ou ajuste/renomeie conforme seus domínios) com seus domínios/caminhos de certificado e upstreams, se alterar as portas.
 2. Garanta que o certificado contém os SAN corretos e é assinado pela sua CA interna.
 3. Recarregue o Nginx do host após copiar as confs: `sudo nginx -t && sudo systemctl reload nginx`.
+4. As confs já incluem redirects de `/.well-known/caldav|carddav` para `/remote.php/dav` e cabeçalhos `X-Content-Type-Options`/`X-Frame-Options`/HSTS.
 
 ## Subir a stack
 ```bash
