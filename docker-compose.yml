@@ -37,7 +37,7 @@ services:
       MYSQL_PASSWORD: ${NC_DB_PASSWORD}
       NEXTCLOUD_DATA_DIR: /var/www/html/data
       REDIS_HOST: redis
-      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-768M}
+      PHP_MEMORY_LIMIT: ${PHP_MEMORY_LIMIT:-1G}
 
       # ✅ Opção A (ENV direto do Nextcloud) — útil para fresh installs
       OVERWRITECLIURL: ${NC_OVERWRITE_CLI_URL}
