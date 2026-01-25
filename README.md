@@ -195,6 +195,14 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Para SMB, rode antes `bash scripts/install-smbclient.sh` (instala libs SMB no contêiner).
 - Busca full-text (opcional): requer subir Solr/Elasticsearch e instalar `fulltextsearch` + `fulltextsearch_files` (não automatizado aqui).
 
+## Pós-instalação rápida (avisos comuns)
+- Script para resolver avisos frequentes (Client Push, notifications, janela de manutenção, reparos caros):
+  ```bash
+  bash scripts/postinstall-fixes.sh   # usa nc-app como contêiner padrão
+  ```
+- Ajuste `MAINT_WINDOW_START` no `.env` se quiser outro horário (padrão 1 = 01:00).
+- O script também lembra sobre AppAPI (Ex-Apps), Talk HPB/TURN e cabeçalhos Forwarded (necessários no proxy).
+
 ### Ajuste de brute force para redes internas
 - Para evitar atraso em logins na LAN, isente suas sub-redes e limpe tentativas pendentes:
   ```bash
