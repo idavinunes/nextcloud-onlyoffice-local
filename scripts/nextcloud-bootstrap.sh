@@ -3,18 +3,39 @@ set -euo pipefail
 
 cd /var/www/html
 
+occ() {
+  # run occ as www-data to avoid permission issues
+  runuser -u www-data -- php occ "$@"
+}
+
+wait_for_occ() {
+  local attempts=0 max_attempts=30
+  local delay=5
+  until occ status >/dev/null 2>&1; do
+    attempts=$((attempts + 1))
+    if [ "${attempts}" -ge "${max_attempts}" ]; then
+      echo "[bootstrap] occ ainda indisponível após ${max_attempts} tentativas; prosseguindo assim mesmo." >&2
+      return
+    fi
+    echo "[bootstrap] aguardando Nextcloud (occ) ficar pronto... (${attempts}/${max_attempts})"
+    sleep "${delay}"
+  done
+}
+
+wait_for_occ
+
 echo "[bootstrap] applying Nextcloud overwrite config..."
 
-php occ config:system:set overwrite.cli.url --value="${NC_OVERWRITE_CLI_URL}"
-php occ config:system:set overwritehost --value="${NC_OVERWRITE_HOST}"
-php occ config:system:set overwriteprotocol --value="${NC_OVERWRITE_PROTOCOL}"
+occ config:system:set overwrite.cli.url --value="${NC_OVERWRITE_CLI_URL}"
+occ config:system:set overwritehost --value="${NC_OVERWRITE_HOST}"
+occ config:system:set overwriteprotocol --value="${NC_OVERWRITE_PROTOCOL}"
 
 # idioma padrão (aplicado no primeiro login de novos usuários)
 if [ -n "${NC_DEFAULT_LANGUAGE:-}" ]; then
-  php occ config:system:set default_language --value="${NC_DEFAULT_LANGUAGE}"
+  occ config:system:set default_language --value="${NC_DEFAULT_LANGUAGE}"
 fi
 if [ -n "${NC_DEFAULT_LOCALE:-}" ]; then
-  php occ config:system:set default_locale --value="${NC_DEFAULT_LOCALE}"
+  occ config:system:set default_locale --value="${NC_DEFAULT_LOCALE}"
 fi
 
 # trusted_domains (suporta lista separada por vírgula)
@@ -26,7 +47,7 @@ if [ -n "${trusted_domains}" ]; then
   for domain in "${domains[@]}"; do
     clean_domain="$(echo "${domain}" | xargs)"
     if [ -n "${clean_domain}" ]; then
-      php occ config:system:set trusted_domains "${idx}" --value="${clean_domain}"
+      occ config:system:set trusted_domains "${idx}" --value="${clean_domain}"
       idx=$((idx + 1))
     fi
   done
@@ -40,17 +61,17 @@ if [ -n "${NC_TRUSTED_PROXIES:-}" ]; then
   for proxy in "${proxies[@]}"; do
     clean_proxy="$(echo "${proxy}" | xargs)"
     if [ -n "${clean_proxy}" ]; then
-      php occ config:system:set trusted_proxies "${idx}" --value="${clean_proxy}"
+      occ config:system:set trusted_proxies "${idx}" --value="${clean_proxy}"
       idx=$((idx + 1))
     fi
   done
 fi
 
 echo "[bootstrap] applying cache/redis config..."
-php occ config:system:set memcache.local --value="\\OC\\Memcache\\APCu"
-php occ config:system:set memcache.locking --value="\\OC\\Memcache\\Redis"
-php occ config:system:set redis host --value="${REDIS_HOST:-redis}"
-php occ config:system:set redis port --type=integer --value="${REDIS_PORT:-6379}"
+occ config:system:set memcache.local --value="\\OC\\Memcache\\APCu"
+occ config:system:set memcache.locking --value="\\OC\\Memcache\\Redis"
+occ config:system:set redis host --value="${REDIS_HOST:-redis}"
+occ config:system:set redis port --type=integer --value="${REDIS_PORT:-6379}"
 
 # Ajuste de OPcache (tune default se variáveis existirem, senão usa defaults)
 opcache_memory="${OPCACHE_MEMORY:-512}"
@@ -65,14 +86,20 @@ opcache.revalidate_freq=60
 EOF
 
 echo "[bootstrap] ensuring OnlyOffice app installed/enabled..."
-php occ app:enable onlyoffice || { php occ app:install onlyoffice && php occ app:enable onlyoffice; }
+if ! occ app:enable onlyoffice >/dev/null 2>&1; then
+  if occ app:install onlyoffice && occ app:enable onlyoffice; then
+    echo "[bootstrap] OnlyOffice app instalado e habilitado."
+  else
+    echo "[bootstrap][warn] Não foi possível instalar/habilitar o app OnlyOffice (verifique conectividade e permissões)." >&2
+  fi
+fi
 
 echo "[bootstrap] applying OnlyOffice app config..."
 
 # ✅ Ajustes do app OnlyOffice (Nextcloud app)
-php occ config:app:set onlyoffice DocumentServerUrl --value="${OO_PUBLIC_URL}"
-php occ config:app:set onlyoffice DocumentServerInternalUrl --value="${OO_INTERNAL_URL}"
-php occ config:app:set onlyoffice StorageUrl --value="${NC_INTERNAL_URL}"
-php occ config:app:set onlyoffice jwt_secret --value="${OO_JWT_SECRET}"
+occ config:app:set onlyoffice DocumentServerUrl --value="${OO_PUBLIC_URL}"
+occ config:app:set onlyoffice DocumentServerInternalUrl --value="${OO_INTERNAL_URL}"
+occ config:app:set onlyoffice StorageUrl --value="${NC_INTERNAL_URL}"
+occ config:app:set onlyoffice jwt_secret --value="${OO_JWT_SECRET}"
 
 echo "[bootstrap] done."
