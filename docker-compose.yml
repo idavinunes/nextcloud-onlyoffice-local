@@ -61,6 +61,7 @@ services:
       - ${NC_APP_VOLUME}:/var/www/html
       - ${NC_DATA_VOLUME}:/var/www/html/data
       - ./scripts/nextcloud-bootstrap.sh:/bootstrap.sh:ro
+      - ./overrides/php/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
 
     depends_on: [db, redis, onlyoffice]
     networks: [interna]
@@ -86,6 +87,7 @@ services:
     volumes:
       - ${NC_APP_VOLUME}:/var/www/html
       - ${NC_DATA_VOLUME}:/var/www/html/data
+      - ./overrides/php/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
     entrypoint: /cron.sh
     depends_on: [app]
     networks: [interna]

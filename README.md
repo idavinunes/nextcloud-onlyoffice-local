@@ -242,6 +242,9 @@ Copie `.env.example` para `.env` e ajuste:
 - `NC_DEFAULT_LANGUAGE` / `NC_DEFAULT_LOCALE`: idioma padrão no primeiro login (ex.: `pt_BR`).
 - `TZ`: timezone compartilhado pelos serviços.
 
+## OPcache persistente
+- O compose monta `overrides/php/opcache.ini` em ambos os contêineres (`nc-app` e `nc-cron`) para manter o OPcache em 1G (`opcache.memory_consumption=1024`, `opcache.max_accelerated_files=200000`, `memory_limit=1G`), mesmo após recriações. Ajuste esse arquivo se quiser outros valores.
+
 ## Ajuste do Nginx no host
 1. O setup aplica automaticamente as confs do Nginx renderizadas a partir dos templates (`nginx/cloud.mms.conf`, `nginx/onlyoffice.mms.conf`) para `/etc/nginx/sites-available/<domínio>.conf` e habilita em `/etc/nginx/sites-enabled/`.
 2. Se usar outros domínios ou caminhos de certificado, ajuste os templates antes de rodar o setup, ou edite os arquivos gerados em `/etc/nginx/sites-available/`.
