@@ -16,6 +16,7 @@ APPS=(
   "calendar"
   "contacts"
   "mail"
+  "impersonate"
   "monitoring"
   "notifications"
   "password_policy"

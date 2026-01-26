@@ -44,6 +44,7 @@ echo "[info] usando contêiner ${CONTAINER} via ${DOCKER_BIN}"
 install_app "client_push"
 install_app "notifications"
 install_app "app_api"
+install_app "onlyoffice"
 if ! occ app:list | grep -q '^Enabled:.*client_push'; then
   # Detecta versão do NC para escolher o tarball
   nc_ver="$(occ status 2>/dev/null | awk -F': ' '/versionstring/ {print $2}' | head -n1)"
