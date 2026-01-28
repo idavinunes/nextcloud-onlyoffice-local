@@ -344,6 +344,14 @@ Rode sempre como `www-data` no contêiner: `docker exec -u www-data nc-app php o
 - `db:convert-filecache-bigint`: converte colunas do filecache para bigint (rodar uma vez; pode ser demorado).
 - `app:update --all`: atualiza apps instalados após atualizar o Nextcloud.
 
+## Manutenção e performance
+- Scan de arquivos: evite `files:scan --all` (puxa CPU/DB). Prefira escopos menores: `docker exec -u www-data nc-app php occ files:scan --path="usuario/files/Pasta"` ou por usuário: `occ files:scan usuario`. Use fora do horário de pico.
+- Brute force: se um IP confiável for bloqueado, limpe com `occ security:bruteforce:reset <ip>` ou, se preciso, `TRUNCATE oc_bruteforce_attempts` no banco (com cautela).
+- Logs: monitore o tamanho de `data/nextcloud.log`. Ajuste `loglevel` se estiver verboso: `occ config:system:set loglevel --value 2` (info) ou 1 (warning).
+- Banco: mantenha índices com `db:add-missing-indices` (pós-upgrade) e use o slow query log do MariaDB se notar consultas lentas.
+- OPcache: já fixamos 1G via `overrides/php/opcache.ini`; se quiser outro valor, edite o arquivo e `docker compose up -d` para aplicar.
+- Cron: reinicie `app/cron` se notar jobs duplicados ou carga alta sem tráfego: `docker restart nc-app nc-cron`.
+
 ## Avisos comuns e como resolver rápido
 - **AppAPI deploy daemon**: se não usa Ex-Apps, ignore. Caso contrário, instale/ative o app `app_api` e configure um daemon em Configurações > Administração > Aplicativos Externos.
 - **Cabeçalhos Forwarded for**: garanta `NC_TRUSTED_PROXIES` e `NC_OVERWRITE_*` corretos no `.env` e recarregue o Nginx do host. Se precisar, adicione no vhost:
