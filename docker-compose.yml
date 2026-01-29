@@ -147,6 +147,18 @@ services:
     depends_on: [oo-postgres, oo-rabbitmq]
     networks: [interna]
 
+  # ------------------ CLOUDFLARE TUNNEL (opcional) ------------------
+  cloudflared:
+    profiles: ["cloudflare"]
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run", "--token", "${CLOUDFLARE_TOKEN}"]
+    environment:
+      - TZ=${TZ}
+    depends_on: [app, onlyoffice]
+    networks: [interna]
+
 networks:
   interna:
     name: interna

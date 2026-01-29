@@ -367,7 +367,7 @@ configure_nginx() {
 
 generate_env_file() {
   local env_file=".env"
-  local cloud_domain="$1" oo_domain="$2" data_root="$3" cert_dir="$4" tz_value="$5" proxies="$6"
+  local cloud_domain="$1" oo_domain="$2" data_root="$3" cert_dir="$4" tz_value="$5" proxies="$6" cf_token="${7:-}"
   if [ -f "${env_file}" ]; then
     if ! ask_yes_no ".env já existe. Substituir?" "n"; then
       echo "[info] Mantendo .env existente."
@@ -405,6 +405,7 @@ NC_OVERWRITE_HOST=${cloud_domain}
 NC_OVERWRITE_PROTOCOL=https
 NC_TRUSTED_DOMAINS=${cloud_domain}
 NC_TRUSTED_PROXIES=${proxies}
+CLOUDFLARE_TOKEN=${cf_token}
 
 OO_PUBLIC_URL=https://${oo_domain}/
 OO_INTERNAL_URL=http://onlyoffice/
@@ -419,7 +420,11 @@ EOF
 
 bring_up_stack() {
   if ask_yes_no "Subir stack agora com docker compose up -d?" "y"; then
-    ${DOCKER_BIN} compose up -d
+    if [ "${proxy_profile}" = "cloudflare" ]; then
+      ${DOCKER_BIN} compose --profile cloudflare up -d
+    else
+      ${DOCKER_BIN} compose up -d
+    fi
   else
     echo "[info] Stack não iniciada; execute 'docker compose up -d' quando pronto."
   fi
