@@ -544,6 +544,14 @@ EOF
       echo " - Crie CNAMEs na zona Cloudflare: ${cloud_domain} e ${oo_domain} apontando para <tunnel>.cfargotunnel.com (proxy laranja)"
       ask_yes_no "Já criou/ajustou os CNAMEs na Cloudflare apontando para o túnel (proxy laranja ativo)?" "y" >/dev/null || \
         echo "[warn] Sem CNAMEs o túnel não resolve os domínios; faça isso depois pelo painel da Cloudflare."
+      echo "[info] Passo a passo na tela 'Encaminhar tráfego' do painel Cloudflare:"
+      echo "  - Crie uma rota para o Nextcloud:"
+      echo "      Subdomínio: ${cloud_domain%%.*}   | Domínio: ${cloud_domain#*.}"
+      echo "      Tipo: HTTP  | URL: http://app   (ou http://127.0.0.1:${NC_HTTP_PORT:-8080})"
+      echo "  - Crie uma rota para o OnlyOffice:"
+      echo "      Subdomínio: ${oo_domain%%.*}     | Domínio: ${oo_domain#*.}"
+      echo "      Tipo: HTTP  | URL: http://onlyoffice   (ou http://127.0.0.1:${OO_HTTP_PORT:-8082})"
+      echo "  - Salve/Concluir. Os registros CNAME serão criados automaticamente com proxy laranja."
     else
       if [ -n "${cloudflare_token}" ]; then
         echo "[info] cloudflared não encontrado; instalando pacote oficial..."
