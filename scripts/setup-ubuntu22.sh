@@ -486,8 +486,17 @@ main() {
     else
       echo "[warn] scripts/cloudflare-realip.sh não encontrado ou sem permissão de execução; aplique manualmente o real_ip para Cloudflare."
     fi
+    cloudflare_token="$(prompt_default "Token do cloudflared (cole o service install token ou deixe vazio)" "")"
     # Gera config.yml de exemplo para cloudflared
     if command -v cloudflared >/dev/null 2>&1; then
+      if [ -n "${cloudflare_token}" ]; then
+        echo "[info] Registrando túnel via token..."
+        if ! ${SUDO} cloudflared service install "${cloudflare_token}"; then
+          echo "[warn] Falha ao registrar o túnel com o token fornecido. Verifique o token e tente novamente." >&2
+        fi
+      else
+        echo "[info] Token não informado; pulei o registro do tunnel. Rode manualmente: sudo cloudflared service install <token>"
+      fi
       cf_dir="${HOME}/.cloudflared"
       ${SUDO} mkdir -p "${cf_dir}"
       cat > "${cf_dir}/config.yml" <<EOF

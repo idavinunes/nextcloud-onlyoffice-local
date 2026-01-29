@@ -290,6 +290,7 @@ Copie `.env.example` para `.env` e ajuste:
   # opcional: cloudflared service install
   ```
   Depois crie CNAMEs na Cloudflare apontando para o domínio do túnel (`xxx.cfargotunnel.com`) com proxy laranja ativo.
+- Passo simplificado com token (recomendado para iniciantes): no painel da Cloudflare copie o comando `sudo cloudflared service install <token>` e cole quando o setup (perfil cloudflare) pedir o token. Ele registra o túnel como serviço automaticamente; depois só ajuste o `config.yml` gerado e crie os CNAMEs.
 
 ## Subir a stack
 ```bash
