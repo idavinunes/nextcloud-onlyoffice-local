@@ -150,12 +150,16 @@ services:
   # ------------------ CLOUDFLARE TUNNEL (opcional) ------------------
   cloudflared:
     profiles: ["cloudflare"]
-    image: cloudflare/cloudflared:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.cloudflared
     container_name: cloudflared
     restart: unless-stopped
     command: ["tunnel", "--no-autoupdate", "run", "--token", "${CLOUDFLARE_TOKEN}"]
     environment:
       - TZ=${TZ}
+    volumes:
+      - ${HOME}/.cloudflared:/etc/cloudflared
     depends_on: [app, onlyoffice]
     networks: [interna]
 
