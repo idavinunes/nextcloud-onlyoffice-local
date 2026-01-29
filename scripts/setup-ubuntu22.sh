@@ -532,9 +532,9 @@ credentials-file: ${cf_dir}/<credencial>.json
 
 ingress:
   - hostname: ${cloud_domain}
-    service: http://127.0.0.1:${NC_HTTP_PORT:-8080}
+    service: http://app
   - hostname: ${oo_domain}
-    service: http://127.0.0.1:${OO_HTTP_PORT:-8082}
+    service: http://onlyoffice
   - service: http_status:404
 EOF
       echo "[info] config.yml de exemplo gerado em ${cf_dir}/config.yml (ajuste tunnel/credencial/hostnames se necessário)."
