@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.nc
       args:
-        BASE_IMAGE: ${NEXTCLOUD_IMAGE:-nextcloud:30-apache}
+        BASE_IMAGE: ${NEXTCLOUD_IMAGE:-nextcloud:30-apache-bullseye}
     image: nextcloud-custom:latest
 
   cron:
@@ -12,5 +12,5 @@ services:
       context: .
       dockerfile: Dockerfile.nc
       args:
-        BASE_IMAGE: ${NEXTCLOUD_IMAGE:-nextcloud:30-apache}
+        BASE_IMAGE: ${NEXTCLOUD_IMAGE:-nextcloud:30-apache-bullseye}
     image: nextcloud-custom:latest

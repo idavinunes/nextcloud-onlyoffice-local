@@ -22,7 +22,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   bash scripts/setup-ubuntu22.sh
   ```
 - Responde às perguntas (domínios, diretório base único, trusted proxies). Ele organiza tudo abaixo do diretório base (padrão `/data/nc-oo`: volumes na raiz e `.../certs` para CA/cert). Domínios padrão sugeridos: `cloud.axisnetworks` (Nextcloud) e `onlyoffice.axisnetworks` (OnlyOffice). Se instalar Docker, será preciso relogar para o grupo `docker`.
-- Para evitar pegar releases muito novas, o `.env` gerado já define `NEXTCLOUD_IMAGE=nextcloud:30-apache` (linha de suporte atual). Por padrão usamos a imagem oficial; se quiser SMB/SFTP (smbclient + ssh2) use o override `docker-compose.custom.yml` (abaixo) e faça `docker compose -f docker-compose.yml -f docker-compose.custom.yml build app cron && docker compose -f docker-compose.yml -f docker-compose.custom.yml up -d`. **Não faça downgrade de versão já instalada**.
+- Para evitar pegar releases muito novas, o `.env` gerado já define `NEXTCLOUD_IMAGE=nextcloud:30-apache` (linha de suporte atual). Por padrão usamos a imagem oficial; se quiser SMB/SFTP (smbclient + ssh2) use o override `docker-compose.custom.yml` (abaixo) — ele builda `Dockerfile.nc` usando `nextcloud:30-apache-bullseye` como base (porque bullseye ainda tem os pacotes php-smbclient/php-ssh2). Rode `docker compose -f docker-compose.yml -f docker-compose.custom.yml build app cron && docker compose -f docker-compose.yml -f docker-compose.custom.yml up -d`. **Não faça downgrade de versão já instalada**.
 - Perfis de proxy (prompt do setup):
   - `internet`: uso padrão com domínio público (pode usar Let’s Encrypt).
   - `local`: TLS com CA interna para LAN.
@@ -236,7 +236,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 
 ## Configuração rápida (.env)
 Copie `.env.example` para `.env` e ajuste:
-- `NEXTCLOUD_IMAGE`: imagem/tag base do Nextcloud; padrão `nextcloud:30-apache`. Para usar a imagem custom (smbclient + ssh2), adicione o override `-f docker-compose.custom.yml` e rode `docker compose -f docker-compose.yml -f docker-compose.custom.yml build app cron` antes do `up -d` (evite downgrade de dados).
+- `NEXTCLOUD_IMAGE`: imagem/tag base do Nextcloud; padrão `nextcloud:30-apache`. Para usar a imagem custom (smbclient + ssh2), adicione o override `-f docker-compose.custom.yml` e rode `docker compose -f docker-compose.yml -f docker-compose.custom.yml build app cron` antes do `up -d` (evite downgrade de dados). Se estiver usando custom, deixe `NEXTCLOUD_IMAGE` como `nextcloud:30-apache-bullseye` ou compatível.
 - `NEXTCLOUD_ADMIN_USER` / `NEXTCLOUD_ADMIN_PASSWORD`: defina para criar o admin automaticamente na primeira inicialização. Se deixar em branco, a UI pedirá usuário/senha na tela de instalação.
 - `NC_DB_ROOT_PASSWORD`, `NC_DB_PASSWORD`: senhas do MariaDB.
 - Volumes (`/data/...`): paths persistentes no host para Nextcloud e OnlyOffice.

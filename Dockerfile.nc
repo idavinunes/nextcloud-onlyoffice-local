@@ -1,15 +1,8 @@
-ARG BASE_IMAGE=nextcloud:30-apache
+ARG BASE_IMAGE=nextcloud:30-apache-bullseye
 FROM ${BASE_IMAGE}
 
-# SMB/SFTP support via pecl (bookworm não traz php-smbclient/php-ssh2 prontos)
-RUN set -ex; \
-    apt-get update; \
+# SMB/SFTP support (bullseye tem pacotes php-smbclient/php-ssh2 prontos)
+RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-      smbclient \
-      libsmbclient-dev libssh2-1-dev libkrb5-dev \
-      php-dev php-pear pkg-config gcc g++ make \
-      openssh-client; \
-    printf "\n" | pecl install smbclient; \
-    pecl install ssh2-1.4; \
-    docker-php-ext-enable smbclient ssh2; \
+      smbclient libsmbclient-php php-ssh2 openssh-client && \
     rm -rf /var/lib/apt/lists/*
