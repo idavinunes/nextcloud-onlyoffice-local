@@ -26,7 +26,16 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Perfis de proxy (prompt do setup):
   - `internet`: uso padrão com domínio público (pode usar Let’s Encrypt).
   - `local`: TLS com CA interna para LAN.
-  - `cloudflare`: pensado para túnel Cloudflare/Argo. Não gera certificado local nem roda certbot; configura Nginx só em HTTP (127.0.0.1:8080/8082), aplica real IP da Cloudflare e oferece passo opcional para colar o token `cloudflared service install ...`.
+- `cloudflare`: pensado para túnel Cloudflare/Argo. Não gera certificado local nem roda certbot; configura Nginx só em HTTP (127.0.0.1:8080/8082), aplica real IP da Cloudflare e oferece passo opcional para colar o token `cloudflared service install ...`.
+
+### HSTS via Cloudflare (perfil cloudflare)
+- Como o TLS termina na borda da Cloudflare, ative o HSTS no painel para eliminar o aviso do Nextcloud:
+  1. Painel Cloudflare → **SSL/TLS** → **Certificados de borda** → **HTTP Strict Transport Security (HSTS)**.
+  2. Habilitar HSTS.
+  3. Max-age: `15552000` (6 meses) ou `31536000` (1 ano).
+  4. Incluir subdomínios: ON (para cobrir `cloud.` e `onlyoffice.`).
+  5. Preload: deixe OFF, a menos que queira enviar ao preload list.
+  6. Salvar e confirmar com: `curl -I https://cloud.seudominio | grep -i strict-transport-security`.
 
 ## Passo a passo - Ubuntu 22.04
 1. Docker/Compose
