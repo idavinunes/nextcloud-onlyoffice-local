@@ -538,7 +538,22 @@ EOF
       ask_yes_no "Já criou/ajustou os CNAMEs na Cloudflare apontando para o túnel (proxy laranja ativo)?" "y" >/dev/null || \
         echo "[warn] Sem CNAMEs o túnel não resolve os domínios; faça isso depois pelo painel da Cloudflare."
     else
-      echo "[warn] cloudflared não está instalado; instale e configure o túnel manualmente conforme README."
+      if [ -n "${cloudflare_token}" ]; then
+        echo "[info] cloudflared não encontrado; instalando pacote oficial..."
+        ${SUDO} mkdir -p /usr/share/keyrings
+        curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | ${SUDO} tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
+        echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflare-main $(lsb_release -cs) main" | ${SUDO} tee /etc/apt/sources.list.d/cloudflare.list >/dev/null
+        ${SUDO} apt-get update
+        ${SUDO} apt-get install -y cloudflared || echo "[warn] Falha ao instalar cloudflared; tente manualmente conforme README."
+        if command -v cloudflared >/dev/null 2>&1; then
+          echo "[info] Registrando túnel via token..."
+          if ! ${SUDO} cloudflared service install "${cloudflare_token}"; then
+            echo "[warn] Falha ao registrar o túnel com o token fornecido. Verifique o token e tente novamente." >&2
+          fi
+        fi
+      else
+        echo "[warn] cloudflared não está instalado; instale e configure o túnel manualmente conforme README."
+      fi
     fi
   fi
 
