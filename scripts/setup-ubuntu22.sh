@@ -444,6 +444,12 @@ main() {
   fi
   phone_region="$(prompt_default "default_phone_region (código ISO, ex.: BR)" "BR")"
 
+  # Ajuste automático: se perfil cloudflare, use internet (não gerar CA interna).
+  if [ "${proxy_profile}" = "cloudflare" ] && [ "${tls_mode}" = "local" ]; then
+    echo "[info] Perfil cloudflare selecionado — ajustando TLS para 'internet' (túnel Cloudflare cuida do edge TLS)."
+    tls_mode="internet"
+  fi
+
   if [ "${tls_mode}" = "local" ]; then
     if ! echo "${cloud_domain}" | grep -Eiq '\.(local|lan)$'; then
       if ! ask_yes_no "Você escolheu 'local' com domínio público (${cloud_domain}). Isso usará CA interna e exigirá instalar a CA nos clientes. Continuar?" "n"; then
