@@ -1,0 +1,16 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.nc
+      args:
+        BASE_IMAGE: ${NEXTCLOUD_IMAGE:-nextcloud:30-apache}
+    image: nextcloud-custom:latest
+
+  cron:
+    build:
+      context: .
+      dockerfile: Dockerfile.nc
+      args:
+        BASE_IMAGE: ${NEXTCLOUD_IMAGE:-nextcloud:30-apache}
+    image: nextcloud-custom:latest

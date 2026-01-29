@@ -24,7 +24,7 @@ services:
     networks: [interna]
 
   app:
-    image: ${NEXTCLOUD_IMAGE:-nextcloud:apache}
+    image: ${NEXTCLOUD_IMAGE:-nextcloud:30-apache}
     container_name: nc-app
     restart: always
     ports:
@@ -79,7 +79,7 @@ services:
       "
 
   cron:
-    image: ${NEXTCLOUD_IMAGE:-nextcloud:apache}
+    image: ${NEXTCLOUD_IMAGE:-nextcloud:30-apache}
     container_name: nc-cron
     restart: always
     environment:
