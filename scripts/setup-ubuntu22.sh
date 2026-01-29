@@ -534,6 +534,8 @@ EOF
       echo " - cloudflared tunnel login (etapa interativa) e cloudflared tunnel create <nome>"
       echo " - Ajuste credentials-file no config.yml para o JSON criado"
       echo " - Crie CNAMEs na zona Cloudflare: ${cloud_domain} e ${oo_domain} apontando para <tunnel>.cfargotunnel.com (proxy laranja)"
+      ask_yes_no "Já criou/ajustou os CNAMEs na Cloudflare apontando para o túnel (proxy laranja ativo)?" "y" >/dev/null || \
+        echo "[warn] Sem CNAMEs o túnel não resolve os domínios; faça isso depois pelo painel da Cloudflare."
     else
       echo "[warn] cloudflared não está instalado; instale e configure o túnel manualmente conforme README."
     fi
