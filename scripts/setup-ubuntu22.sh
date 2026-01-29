@@ -511,6 +511,8 @@ main() {
       echo "[warn] scripts/cloudflare-realip.sh não encontrado; aplique manualmente o real_ip para Cloudflare."
     fi
     cloudflare_token="$(prompt_default "Token do cloudflared (cole o service install token ou deixe vazio)" "")"
+    # Sanitiza caso o usuário cole o comando completo "sudo cloudflared service install <token>"
+    cloudflare_token="$(echo "${cloudflare_token}" | sed -E 's/^[[:space:]]*(sudo[[:space:]]+)?cloudflared[[:space:]]+service[[:space:]]+install[[:space:]]+//')"
     # Gera config.yml de exemplo para cloudflared
     if command -v cloudflared >/dev/null 2>&1; then
       if [ -n "${cloudflare_token}" ]; then
