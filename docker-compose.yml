@@ -150,9 +150,7 @@ services:
   # ------------------ CLOUDFLARE TUNNEL (opcional) ------------------
   cloudflared:
     profiles: ["cloudflare"]
-    build:
-      context: .
-      dockerfile: Dockerfile.cloudflared
+    image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
     command: ["tunnel", "--no-autoupdate", "run", "--token", "${CLOUDFLARE_TOKEN}"]
