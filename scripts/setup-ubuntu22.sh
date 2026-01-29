@@ -552,6 +552,10 @@ EOF
       echo "      Subdomínio: ${oo_domain%%.*}     | Domínio: ${oo_domain#*.}"
       echo "      Tipo: HTTP  | URL: http://onlyoffice   (ou http://127.0.0.1:${OO_HTTP_PORT:-8082})"
       echo "  - Salve/Concluir. Os registros CNAME serão criados automaticamente com proxy laranja."
+      # Garante diretório de config do túnel (o container monta em /etc/cloudflared)
+      CF_HOME="${HOME:-/root}/.cloudflared"
+      ${SUDO} mkdir -p "${CF_HOME}"
+      echo "[info] Diretório de config do túnel: ${CF_HOME} (será montado em /etc/cloudflared). O token no .env fará o download automático da credencial."
     else
       if [ -n "${cloudflare_token}" ]; then
         echo "[info] cloudflared não encontrado; instalando pacote oficial..."
@@ -596,6 +600,8 @@ EOF
 - TLS: curl -Iv https://${cloud_domain} e openssl s_client -connect ${cloud_domain}:443 -servername ${cloud_domain}
 - Nextcloud: https://${cloud_domain}/status.php e “Security & setup warnings”
 - OnlyOffice: https://${oo_domain}/healthcheck e edição via app OnlyOffice no Nextcloud
+ - Cloudflare: docker logs -f cloudflared  (procurar "Registered tunnel" e ausência de connection refused)
+ - Se usar perfil cloudflare manualmente: docker compose --profile cloudflare up -d
 EOF
 }
 
