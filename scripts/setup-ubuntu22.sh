@@ -498,11 +498,12 @@ main() {
   configure_nginx "${cloud_domain}" "${oo_domain}" "${cert_path}" "${key_path}" "${nginx_mode}"
 
   if [ "${proxy_profile}" = "cloudflare" ]; then
-    if [ -x "${REPO_ROOT}/scripts/cloudflare-realip.sh" ]; then
+    if [ -f "${REPO_ROOT}/scripts/cloudflare-realip.sh" ]; then
       echo "[info] Aplicando real_ip da Cloudflare..."
-      SUDO="${SUDO}" "${REPO_ROOT}/scripts/cloudflare-realip.sh"
+      chmod +x "${REPO_ROOT}/scripts/cloudflare-realip.sh" 2>/dev/null || true
+      SUDO="${SUDO}" bash "${REPO_ROOT}/scripts/cloudflare-realip.sh"
     else
-      echo "[warn] scripts/cloudflare-realip.sh não encontrado ou sem permissão de execução; aplique manualmente o real_ip para Cloudflare."
+      echo "[warn] scripts/cloudflare-realip.sh não encontrado; aplique manualmente o real_ip para Cloudflare."
     fi
     cloudflare_token="$(prompt_default "Token do cloudflared (cole o service install token ou deixe vazio)" "")"
     # Gera config.yml de exemplo para cloudflared
