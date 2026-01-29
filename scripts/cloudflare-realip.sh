@@ -14,6 +14,7 @@ trap cleanup EXIT
 
 echo "[info] baixando lista de IPs da Cloudflare..."
 curl -fsSL https://www.cloudflare.com/ips-v4 >"${TMP}"
+echo "" >> "${TMP}"
 curl -fsSL https://www.cloudflare.com/ips-v6 >>"${TMP}"
 
 ${SUDO} mkdir -p "${NGINX_CONF_DIR}"
