@@ -542,8 +542,8 @@ EOF
         echo "[info] cloudflared não encontrado; instalando pacote oficial..."
         ${SUDO} mkdir -p /usr/share/keyrings
         curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | ${SUDO} tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
-        echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflare-main $(lsb_release -cs) main" | ${SUDO} tee /etc/apt/sources.list.d/cloudflare.list >/dev/null
-        ${SUDO} apt-get update
+        echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(lsb_release -cs) main" | ${SUDO} tee /etc/apt/sources.list.d/cloudflared.list >/dev/null
+        ${SUDO} apt-get update || true
         ${SUDO} apt-get install -y cloudflared || echo "[warn] Falha ao instalar cloudflared; tente manualmente conforme README."
         if command -v cloudflared >/dev/null 2>&1; then
           echo "[info] Registrando túnel via token..."
