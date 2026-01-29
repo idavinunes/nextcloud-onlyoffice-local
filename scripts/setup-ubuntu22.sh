@@ -335,7 +335,7 @@ render_nginx_conf() {
 }
 
 configure_nginx() {
-  local cloud_domain="$1" oo_domain="$2" cert_path="$3" key_path="$4"
+  local cloud_domain="$1" oo_domain="$2" cert_path="$3" key_path="$4" mode="$5"
   if [ "${SKIP_NGINX_CONFIG:-}" = "1" ]; then
     echo "[info] SKIP_NGINX_CONFIG=1 — pulando configuração do Nginx."
     return
@@ -348,8 +348,15 @@ configure_nginx() {
   local enabled="/etc/nginx/sites-enabled"
   ${SUDO} mkdir -p "${avail}" "${enabled}"
 
-  render_nginx_conf "${REPO_ROOT}/nginx/cloud.mms.conf" "${cloud_domain}" "${cert_path}" "${key_path}" "${avail}/${cloud_domain}.conf"
-  render_nginx_conf "${REPO_ROOT}/nginx/onlyoffice.mms.conf" "${oo_domain}" "${cert_path}" "${key_path}" "${avail}/${oo_domain}.conf"
+  local cloud_tpl="${REPO_ROOT}/nginx/cloud.mms.conf"
+  local oo_tpl="${REPO_ROOT}/nginx/onlyoffice.mms.conf"
+  if [ "${mode}" = "http" ]; then
+    cloud_tpl="${REPO_ROOT}/nginx/cloud.mms.http.conf"
+    oo_tpl="${REPO_ROOT}/nginx/onlyoffice.mms.http.conf"
+  fi
+
+  render_nginx_conf "${cloud_tpl}" "${cloud_domain}" "${cert_path}" "${key_path}" "${avail}/${cloud_domain}.conf"
+  render_nginx_conf "${oo_tpl}" "${oo_domain}" "${cert_path}" "${key_path}" "${avail}/${oo_domain}.conf"
 
   ${SUDO} ln -sf "${avail}/${cloud_domain}.conf" "${enabled}/${cloud_domain}.conf"
   ${SUDO} ln -sf "${avail}/${oo_domain}.conf" "${enabled}/${oo_domain}.conf"
@@ -444,9 +451,11 @@ main() {
   fi
   phone_region="$(prompt_default "default_phone_region (código ISO, ex.: BR)" "BR")"
 
-  # Perfil cloudflare: evitamos certbot; use cert interno (local) e túnel faz o edge TLS.
+  # Perfil cloudflare: não gera certificado local (TLS fica no edge/túnel).
+  local nginx_mode="https"
   if [ "${proxy_profile}" = "cloudflare" ]; then
-    tls_mode="local"
+    tls_mode="cloudflare"
+    nginx_mode="http"
   fi
 
   if [ "${tls_mode}" = "local" ] && [ "${proxy_profile}" != "cloudflare" ]; then
@@ -475,14 +484,18 @@ main() {
       echo "[error] Certificados Let's Encrypt não encontrados em ${cert_path}/${key_path}." >&2
       exit 1
     fi
-  else
+  elif [ "${tls_mode}" = "local" ]; then
     generate_ca_and_cert "${cert_dir}" "${cloud_domain},${oo_domain}"
     cert_path="${cert_dir}/mms.crt"
     key_path="${cert_dir}/mms.key"
+  else
+    # cloudflare: usa HTTP local, TLS no edge; sem certificados aqui
+    cert_path=""
+    key_path=""
   fi
 
   generate_env_file "${cloud_domain}" "${oo_domain}" "${data_root}" "${cert_dir}" "${tz_value}" "${proxies}"
-  configure_nginx "${cloud_domain}" "${oo_domain}" "${cert_path}" "${key_path}"
+  configure_nginx "${cloud_domain}" "${oo_domain}" "${cert_path}" "${key_path}" "${nginx_mode}"
 
   if [ "${proxy_profile}" = "cloudflare" ]; then
     if [ -x "${REPO_ROOT}/scripts/cloudflare-realip.sh" ]; then
@@ -530,11 +543,17 @@ EOF
   echo "Domínios: NC=${cloud_domain}, OO=${oo_domain}"
   echo "Base: ${base_dir}"
   echo "Volumes em: ${data_root}"
-  if [ "${tls_mode}" = "internet" ]; then
-    echo "Certificados: ${cert_path} | ${key_path} (Let's Encrypt)"
-  else
-    echo "Certificados: ${cert_path}|${key_path} (CA: ${cert_dir}/lan-ca.crt)"
-  fi
+  case "${tls_mode}" in
+    internet)
+      echo "Certificados: ${cert_path} | ${key_path} (Let's Encrypt)"
+      ;;
+    local)
+      echo "Certificados: ${cert_path}|${key_path} (CA: ${cert_dir}/lan-ca.crt)"
+      ;;
+    cloudflare)
+      echo "Certificados: origem HTTP (sem TLS local); TLS termina no Cloudflare/túnel"
+      ;;
+  esac
   echo ".env gerado (revise senhas/URLs se necessário)"
 
   bring_up_stack

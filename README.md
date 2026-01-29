@@ -26,7 +26,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Perfis de proxy (prompt do setup):
   - `internet`: uso padrão com domínio público (pode usar Let’s Encrypt).
   - `local`: TLS com CA interna para LAN.
-- `cloudflare`: igual ao internet, mas já aplica real IP da Cloudflare via `scripts/cloudflare-realip.sh` no Nginx.
+  - `cloudflare`: pensado para túnel Cloudflare/Argo. Não gera certificado local nem roda certbot; configura Nginx só em HTTP (127.0.0.1:8080/8082), aplica real IP da Cloudflare e oferece passo opcional para colar o token `cloudflared service install ...`.
 
 ## Passo a passo - Ubuntu 22.04
 1. Docker/Compose
@@ -253,7 +253,11 @@ Copie `.env.example` para `.env` e ajuste:
 5. As confs já incluem redirects de `/.well-known/caldav|carddav` para `/remote.php/dav`, cabeçalhos `X-Content-Type-Options`/`X-Frame-Options`/HSTS e cabeçalho `Forwarded`/`X-Forwarded-*`.
 
 ### Cloudflare como proxy reverso (Internet ou LAN com túnel)
-- Real IP no Nginx (já automático ao escolher o perfil cloudflare no setup):
+- Perfil `cloudflare` no setup:
+  - Nginx fica só em HTTP (127.0.0.1:8080/8082); o TLS é terminado pelo Cloudflare/túnel.
+  - Não roda certbot nem gera CA interna; nada de prompts de certificado.
+  - Aplica automaticamente real IP da Cloudflare via `scripts/cloudflare-realip.sh`.
+- Real IP manual (se precisar rodar fora do setup):
   ```bash
   sudo bash scripts/cloudflare-realip.sh
   sudo nginx -t && sudo systemctl reload nginx
