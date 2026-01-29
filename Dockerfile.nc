@@ -12,6 +12,4 @@ RUN set -ex; \
     printf "\n" | pecl install smbclient; \
     pecl install ssh2-1.4; \
     docker-php-ext-enable smbclient ssh2; \
-    apt-get purge -y php-dev php-pear pkg-config gcc g++ make libsmbclient-dev libssh2-1-dev libkrb5-dev; \
-    apt-get autoremove -y; \
     rm -rf /var/lib/apt/lists/*
