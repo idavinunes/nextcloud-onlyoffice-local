@@ -153,11 +153,9 @@ services:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
     restart: unless-stopped
-    command: ["tunnel", "--no-autoupdate", "--config", "/etc/cloudflared/config.yml", "run"]
+    command: ["tunnel", "--no-autoupdate", "run", "--token", "${CLOUDFLARE_TOKEN}"]
     environment:
       - TZ=${TZ}
-    volumes:
-      - /data/.cloudflared:/etc/cloudflared
     depends_on: [app, onlyoffice]
     networks: [interna]
 
