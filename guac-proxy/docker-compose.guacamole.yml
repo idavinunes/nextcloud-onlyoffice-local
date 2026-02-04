@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  guacd:
+    image: guacamole/guacd:1.5.5
+    container_name: guacd
+    restart: always
+    networks: [interna]
+
+  guac-db:
+    image: mariadb:10.11
+    container_name: guac-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: guacroot
+      MYSQL_DATABASE: guacdb
+      MYSQL_USER: guacuser
+      MYSQL_PASSWORD: guacpass
+      TZ: America/Sao_Paulo
+    volumes:
+      - guac-db-data:/var/lib/mysql
+    networks: [interna]
+
+  guacamole:
+    image: guacamole/guacamole:1.5.5
+    container_name: guacamole
+    restart: always
+    depends_on: [guacd, guac-db]
+    environment:
+      GUACD_HOSTNAME: guacd
+      MYSQL_HOSTNAME: guac-db
+      MYSQL_DATABASE: guacdb
+      MYSQL_USER: guacuser
+      MYSQL_PASSWORD: guacpass
+      TZ: America/Sao_Paulo
+    networks: [interna]
+
+  guac-proxy:
+    image: nginx:alpine
+    container_name: guac-proxy
+    restart: always
+    depends_on: [guacamole]
+    volumes:
+      - ./nginx/guac.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - interna
+
+networks:
+  interna:
+    external: true   # usa a mesma rede 'interna' do stack Nextcloud
+
+volumes:
+  guac-db-data:
