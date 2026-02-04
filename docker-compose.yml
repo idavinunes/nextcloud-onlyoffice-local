@@ -63,6 +63,8 @@ services:
       - ${NC_DATA_VOLUME}:/var/www/html/data
       - ./scripts/nextcloud-bootstrap.sh:/bootstrap.sh:ro
       - ./overrides/php/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+      # Socket do ClamAV no host para o app de Antivirus do Nextcloud
+      - /run/clamav/clamd.ctl:/run/clamav/clamd.ctl:ro
       # Opcional: expor um mount do host (ex.: rclone Dropbox em /data/dropbox-advec)
       # - /data/dropbox-advec:/data/dropbox-advec:rw
 
@@ -91,6 +93,8 @@ services:
       - ${NC_APP_VOLUME}:/var/www/html
       - ${NC_DATA_VOLUME}:/var/www/html/data
       - ./overrides/php/opcache.ini:/usr/local/etc/php/conf.d/zz-opcache.ini:ro
+      # Socket do ClamAV para varreduras em background
+      - /run/clamav/clamd.ctl:/run/clamav/clamd.ctl:ro
       # Opcional: expor um mount do host (ex.: rclone Dropbox em /data/dropbox-advec)
       # - /data/dropbox-advec:/data/dropbox-advec:rw
     entrypoint: /cron.sh
