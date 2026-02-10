@@ -43,8 +43,8 @@ services:
     volumes:
       - ./nginx/guac.conf:/etc/nginx/conf.d/default.conf:ro
     ports:
-      # Exponha 8081 no host para testar via http://HOST:8081/guacamole/
-      - "8081:8081"
+      # Exponha 8083 no host para testar via http://HOST:8083/guacamole/
+      - "8083:8081"
     networks:
       - interna
 
