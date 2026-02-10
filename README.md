@@ -329,6 +329,21 @@ Notas:
   GUAC_DB_ROOT_PASSWORD=SUA_SENHA bash scripts/guacamole-initdb.sh
   ```
 
+### Iframe do Guacamole no Nextcloud
+Para permitir embutir o Guacamole dentro do Nextcloud, adicione o domínio na lista
+`allowed_iframe_domains`:
+
+```bash
+# ver a lista atual
+docker exec -u www-data nc-app php occ config:system:get allowed_iframe_domains
+
+# adicionar no proximo indice (exemplo: 2)
+docker exec -u www-data nc-app php occ config:system:set allowed_iframe_domains 2 --value="https://lyguaca.axisnetworks.com.br"
+```
+
+Observação: o proxy do Guacamole também precisa permitir iframe (CSP/`X-Frame-Options`).
+O template `guac-proxy/nginx/guac.conf` já define `frame-ancestors`.
+
 ## O que o bootstrap aplica (Nextcloud)
 - `overwrite.cli.url`, `overwritehost`, `overwriteprotocol`.
 - `trusted_domains` e `trusted_proxies` a partir do `.env`.
