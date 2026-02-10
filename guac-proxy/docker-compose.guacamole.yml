@@ -5,7 +5,7 @@ services:
     image: guacamole/guacd:1.5.5
     container_name: guacd
     restart: always
-    networks: [interna]
+    networks: [guac-net]
 
   guac-db:
     image: mariadb:10.11
@@ -19,7 +19,7 @@ services:
       TZ: America/Sao_Paulo
     volumes:
       - guac-db-data:/var/lib/mysql
-    networks: [interna]
+    networks: [guac-net]
 
   guacamole:
     image: guacamole/guacamole:1.5.5
@@ -33,7 +33,7 @@ services:
       MYSQL_USER: guacuser
       MYSQL_PASSWORD: guacpass
       TZ: America/Sao_Paulo
-    networks: [interna]
+    networks: [guac-net]
 
   guac-proxy:
     image: nginx:alpine
@@ -46,11 +46,10 @@ services:
       # Exponha 8083 no host para testar via http://HOST:8083/guacamole/
       - "8083:8081"
     networks:
-      - interna
+      - guac-net
 
 networks:
-  interna:
-    external: true   # usa a mesma rede 'interna' do stack Nextcloud
+  guac-net: {}
 
 volumes:
   guac-db-data:
