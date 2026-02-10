@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   guacd:
     image: guacamole/guacd:1.5.5

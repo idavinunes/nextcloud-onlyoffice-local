@@ -313,6 +313,22 @@ docker compose up -d
 ```
 O contêiner `nc-app` roda `scripts/nextcloud-bootstrap.sh` a cada start para padronizar as configs.
 
+## Guacamole (Docker)
+```bash
+docker compose -f guac-proxy/docker-compose.guacamole.yml up -d
+```
+Depois **importe o schema do banco** (primeira vez):
+```bash
+bash scripts/guacamole-initdb.sh
+```
+Notas:
+- Login padrão: `guacadmin` / `guacadmin` (troque ao entrar).
+- Porta padrão no host: `8083` (ajuste no compose se quiser outra).
+- Se você mudou a senha root do banco do Guacamole, rode:
+  ```bash
+  GUAC_DB_ROOT_PASSWORD=SUA_SENHA bash scripts/guacamole-initdb.sh
+  ```
+
 ## O que o bootstrap aplica (Nextcloud)
 - `overwrite.cli.url`, `overwritehost`, `overwriteprotocol`.
 - `trusted_domains` e `trusted_proxies` a partir do `.env`.
