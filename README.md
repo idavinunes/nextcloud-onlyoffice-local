@@ -344,6 +344,19 @@ docker exec -u www-data nc-app php occ config:system:set allowed_iframe_domains 
 Observação: o proxy do Guacamole também precisa permitir iframe (CSP/`X-Frame-Options`).
 O template `guac-proxy/nginx/guac.conf` já define `frame-ancestors`.
 
+#### Clipboard no iframe (External app)
+Se você usa o app **External** para embutir o Guacamole e precisa de **copiar/colar**,
+adicione o atributo `allow` no `iframe` do template:
+
+```bash
+docker exec -u root nc-app sh -c 'FILE=/var/www/html/custom_apps/external/templates/frame.php; \
+  sed -i "s/allowfullscreen/allowfullscreen allow=\"clipboard-read; clipboard-write\"/" "$FILE"'
+```
+
+Notas:
+- Se o app estiver em `/var/www/html/apps/external`, ajuste o caminho.
+- Atualizações do app podem sobrescrever esse ajuste.
+
 ## O que o bootstrap aplica (Nextcloud)
 - `overwrite.cli.url`, `overwritehost`, `overwriteprotocol`.
 - `trusted_domains` e `trusted_proxies` a partir do `.env`.
