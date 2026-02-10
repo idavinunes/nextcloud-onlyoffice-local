@@ -26,7 +26,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 - Perfis de proxy (prompt do setup):
   - `internet`: uso padrão com domínio público (pode usar Let’s Encrypt).
   - `local`: TLS com CA interna para LAN.
-- `cloudflare`: pensado para túnel Cloudflare/Argo. Não gera certificado local nem roda certbot; configura Nginx só em HTTP (127.0.0.1:8080/8082), aplica real IP da Cloudflare e oferece passo opcional para colar o token `cloudflared service install ...`.
+- `cloudflare`: pensado para túnel Cloudflare/Argo. Não gera certificado local nem roda certbot; configura Nginx só em HTTP (127.0.0.1:8080/8082) e aplica real IP da Cloudflare. **O cloudflared é instalado/configurado separadamente no host (fora do Docker)**.
 
 ### HSTS via Cloudflare (perfil cloudflare)
 - Como o TLS termina na borda da Cloudflare, ative o HSTS no painel para eliminar o aviso do Nextcloud:
@@ -266,6 +266,7 @@ Copie `.env.example` para `.env` e ajuste:
   - Nginx fica só em HTTP (127.0.0.1:8080/8082); o TLS é terminado pelo Cloudflare/túnel.
   - Não roda certbot nem gera CA interna; nada de prompts de certificado.
   - Aplica automaticamente real IP da Cloudflare via `scripts/cloudflare-realip.sh`.
+  - **O setup não instala nem registra o cloudflared.**
 - Real IP manual (se precisar rodar fora do setup):
   ```bash
   sudo bash scripts/cloudflare-realip.sh
@@ -300,10 +301,10 @@ Copie `.env.example` para `.env` e ajuste:
 
   # rodar o túnel (ou instalar como serviço)
   cloudflared tunnel run nextcloud-tunel
-  # opcional: cloudflared service install
+  # opcional: cloudflared service install <TOKEN>
   ```
   Depois crie CNAMEs na Cloudflare apontando para o domínio do túnel (`xxx.cfargotunnel.com`) com proxy laranja ativo.
-- Passo simplificado com token (recomendado para iniciantes): no painel da Cloudflare copie o comando `sudo cloudflared service install <token>` e cole quando o setup (perfil cloudflare) pedir o token. Ele registra o túnel como serviço automaticamente; depois só ajuste o `config.yml` gerado e crie os CNAMEs.
+- Observação: o token do `cloudflared service install` deve ser usado **diretamente no host** (não via docker compose). O setup não pede nem grava token no `.env`.
 
 ## Subir a stack
 ```bash

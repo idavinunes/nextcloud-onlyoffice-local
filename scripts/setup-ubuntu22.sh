@@ -367,7 +367,7 @@ configure_nginx() {
 
 generate_env_file() {
   local env_file=".env"
-  local cloud_domain="$1" oo_domain="$2" data_root="$3" cert_dir="$4" tz_value="$5" proxies="$6" cf_token="${7:-}"
+  local cloud_domain="$1" oo_domain="$2" data_root="$3" cert_dir="$4" tz_value="$5" proxies="$6"
   if [ -f "${env_file}" ]; then
     if ! ask_yes_no ".env já existe. Substituir?" "n"; then
       echo "[info] Mantendo .env existente."
@@ -405,7 +405,6 @@ NC_OVERWRITE_HOST=${cloud_domain}
 NC_OVERWRITE_PROTOCOL=https
 NC_TRUSTED_DOMAINS=${cloud_domain}
 NC_TRUSTED_PROXIES=${proxies}
-CLOUDFLARE_TOKEN=${cf_token}
 
 OO_PUBLIC_URL=https://${oo_domain}/
 OO_INTERNAL_URL=http://onlyoffice/
@@ -420,11 +419,7 @@ EOF
 
 bring_up_stack() {
   if ask_yes_no "Subir stack agora com docker compose up -d?" "y"; then
-    if [ "${proxy_profile}" = "cloudflare" ]; then
-      ${DOCKER_BIN} compose --profile cloudflare up -d
-    else
-      ${DOCKER_BIN} compose up -d
-    fi
+    ${DOCKER_BIN} compose up -d
   else
     echo "[info] Stack não iniciada; execute 'docker compose up -d' quando pronto."
   fi
@@ -510,70 +505,8 @@ main() {
     else
       echo "[warn] scripts/cloudflare-realip.sh não encontrado; aplique manualmente o real_ip para Cloudflare."
     fi
-    cloudflare_token="$(prompt_default "Token do cloudflared (cole o service install token ou deixe vazio)" "")"
-    # Sanitiza caso o usuário cole o comando completo "sudo cloudflared service install <token>"
-    cloudflare_token="$(echo "${cloudflare_token}" | sed -E 's/^[[:space:]]*(sudo[[:space:]]+)?cloudflared[[:space:]]+service[[:space:]]+install[[:space:]]+//')"
-    # Gera config.yml de exemplo para cloudflared
-    if command -v cloudflared >/dev/null 2>&1; then
-      if [ -n "${cloudflare_token}" ]; then
-        echo "[info] Registrando túnel via token..."
-        if ! ${SUDO} cloudflared service install "${cloudflare_token}"; then
-          echo "[warn] Falha ao registrar o túnel com o token fornecido. Verifique o token e tente novamente." >&2
-        fi
-      else
-        echo "[info] Token não informado; pulei o registro do tunnel. Rode manualmente: sudo cloudflared service install <token>"
-      fi
-      cf_dir="${HOME}/.cloudflared"
-      ${SUDO} mkdir -p "${cf_dir}"
-      cat > "${cf_dir}/config.yml" <<EOF
-# Exemplo de config para cloudflared (ajuste tunnel/credenciais/hostnames)
-tunnel: nextcloud-tunel
-credentials-file: ${cf_dir}/<credencial>.json
-
-ingress:
-  - hostname: ${cloud_domain}
-    service: http://app
-  - hostname: ${oo_domain}
-    service: http://onlyoffice
-  - service: http_status:404
-EOF
-      echo "[info] config.yml de exemplo gerado em ${cf_dir}/config.yml (ajuste tunnel/credencial/hostnames se necessário)."
-      echo "[info] Lembretes Cloudflare:"
-      echo " - cloudflared tunnel login (etapa interativa) e cloudflared tunnel create <nome>"
-      echo " - Ajuste credentials-file no config.yml para o JSON criado"
-      echo " - Crie CNAMEs na zona Cloudflare: ${cloud_domain} e ${oo_domain} apontando para <tunnel>.cfargotunnel.com (proxy laranja)"
-      ask_yes_no "Já criou/ajustou os CNAMEs na Cloudflare apontando para o túnel (proxy laranja ativo)?" "y" >/dev/null || \
-        echo "[warn] Sem CNAMEs o túnel não resolve os domínios; faça isso depois pelo painel da Cloudflare."
-      echo "[info] Passo a passo na tela 'Encaminhar tráfego' do painel Cloudflare:"
-      echo "  - Crie uma rota para o Nextcloud:"
-      echo "      Subdomínio: ${cloud_domain%%.*}   | Domínio: ${cloud_domain#*.}"
-      echo "      Tipo: HTTP  | URL: http://app   (ou http://127.0.0.1:${NC_HTTP_PORT:-8080})"
-      echo "  - Crie uma rota para o OnlyOffice:"
-      echo "      Subdomínio: ${oo_domain%%.*}     | Domínio: ${oo_domain#*.}"
-      echo "      Tipo: HTTP  | URL: http://onlyoffice   (ou http://127.0.0.1:${OO_HTTP_PORT:-8082})"
-      echo "  - Salve/Concluir. Os registros CNAME serão criados automaticamente com proxy laranja."
-      # Garante diretório de config do túnel (o container monta em /etc/cloudflared)
-      CF_HOME="${HOME:-/root}/.cloudflared"
-      ${SUDO} mkdir -p "${CF_HOME}"
-      echo "[info] Diretório de config do túnel: ${CF_HOME} (será montado em /etc/cloudflared). O token no .env fará o download automático da credencial."
-    else
-      if [ -n "${cloudflare_token}" ]; then
-        echo "[info] cloudflared não encontrado; instalando pacote oficial..."
-        ${SUDO} mkdir -p /usr/share/keyrings
-        curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | ${SUDO} tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
-        echo "deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared $(lsb_release -cs) main" | ${SUDO} tee /etc/apt/sources.list.d/cloudflared.list >/dev/null
-        ${SUDO} apt-get update || true
-        ${SUDO} apt-get install -y cloudflared || echo "[warn] Falha ao instalar cloudflared; tente manualmente conforme README."
-        if command -v cloudflared >/dev/null 2>&1; then
-          echo "[info] Registrando túnel via token..."
-          if ! ${SUDO} cloudflared service install "${cloudflare_token}"; then
-            echo "[warn] Falha ao registrar o túnel com o token fornecido. Verifique o token e tente novamente." >&2
-          fi
-        fi
-      else
-        echo "[warn] cloudflared não está instalado; instale e configure o túnel manualmente conforme README."
-      fi
-    fi
+    echo "[info] Cloudflare/túnel: este setup não instala nem registra o cloudflared."
+    echo "[info] Instale e configure o cloudflared no host (fora do Docker) conforme README."
   fi
 
   echo "=== Resumo ==="
@@ -600,8 +533,7 @@ EOF
 - TLS: curl -Iv https://${cloud_domain} e openssl s_client -connect ${cloud_domain}:443 -servername ${cloud_domain}
 - Nextcloud: https://${cloud_domain}/status.php e “Security & setup warnings”
 - OnlyOffice: https://${oo_domain}/healthcheck e edição via app OnlyOffice no Nextcloud
- - Cloudflare: docker logs -f cloudflared  (procurar "Registered tunnel" e ausência de connection refused)
- - Se usar perfil cloudflare manualmente: docker compose --profile cloudflare up -d
+ - Cloudflare: verifique o serviço cloudflared no host (systemctl status cloudflared) e logs (journalctl -u cloudflared -n 100)
 EOF
 }
 
