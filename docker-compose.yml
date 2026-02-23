@@ -67,6 +67,8 @@ services:
       - /run/clamav/clamd.ctl:/run/clamav/clamd.ctl:ro
       # Opcional: expor um mount do host (ex.: rclone Dropbox em /data/dropbox-advec)
       # - /data/dropbox-advec:/data/dropbox-advec:rw
+      # Opcional: rclone Google Drive (host) em /data/gdrive
+      # - /data/gdrive:/data/gdrive:rw
 
     depends_on: [db, redis, onlyoffice]
     networks: [interna]
@@ -97,6 +99,8 @@ services:
       - /run/clamav/clamd.ctl:/run/clamav/clamd.ctl:ro
       # Opcional: expor um mount do host (ex.: rclone Dropbox em /data/dropbox-advec)
       # - /data/dropbox-advec:/data/dropbox-advec:rw
+      # Opcional: rclone Google Drive (host) em /data/gdrive
+      # - /data/gdrive:/data/gdrive:rw
     entrypoint: /cron.sh
     depends_on: [app]
     networks: [interna]
