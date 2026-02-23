@@ -81,6 +81,18 @@ prepare_data_disk() {
   ${SUDO} umount -f "${device}" "${part}" >/dev/null 2>&1 || true
   ${SUDO} parted -s "${device}" mklabel gpt
   ${SUDO} parted -s -a opt "${device}" mkpart primary ext4 0% 100%
+  ${SUDO} partprobe "${device}" >/dev/null 2>&1 || true
+  if command -v udevadm >/dev/null 2>&1; then
+    ${SUDO} udevadm settle
+  fi
+  for _ in 1 2 3 4 5; do
+    [ -b "${part}" ] && break
+    sleep 1
+  done
+  if [ ! -b "${part}" ]; then
+    echo "[error] Partição ${part} não encontrada após particionar ${device}. Tente reiniciar e rodar novamente."
+    return 1
+  fi
   ${SUDO} mkfs.ext4 -F -L "${label}" "${part}"
 
   ${SUDO} mkdir -p "${mountpoint}"
