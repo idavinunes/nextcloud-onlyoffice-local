@@ -38,6 +38,13 @@ if [ -n "${NC_DEFAULT_LOCALE:-}" ]; then
   occ config:system:set default_locale --value="${NC_DEFAULT_LOCALE}"
 fi
 
+# skeleton (evita pastas padrão para novos usuários)
+skeleton_dir="${NC_SKELETON_DIR:-/var/www/html/skeleton-empty}"
+if [ -n "${skeleton_dir}" ]; then
+  mkdir -p "${skeleton_dir}"
+  occ config:system:set skeletondirectory --value="${skeleton_dir}"
+fi
+
 # trusted_domains (suporta lista separada por vírgula)
 trusted_domains="${NC_TRUSTED_DOMAINS:-${NC_OVERWRITE_HOST:-}}"
 if [ -n "${trusted_domains}" ]; then

@@ -249,6 +249,7 @@ Copie `.env.example` para `.env` e ajuste:
 - `NC_DEFAULT_PHONE_REGION`: código de país ISO (ex.: BR) para validar números; usado no pós-install.
 - `OPCACHE_MEMORY` / `OPCACHE_INTERNED_STRINGS` / `OPCACHE_MAX_ACCELERATED_FILES`: tunar o OPcache (padrão 512 MB, 16, 100000).
 - `NC_DEFAULT_LANGUAGE` / `NC_DEFAULT_LOCALE`: idioma padrão no primeiro login (ex.: `pt_BR`).
+- `NC_SKELETON_DIR`: diretório skeleton para novos usuários (padrão vazio em `/var/www/html/skeleton-empty`).
 - `TZ`: timezone compartilhado pelos serviços.
 
 ## OPcache persistente
