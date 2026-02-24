@@ -22,7 +22,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
   bash scripts/setup-ubuntu22.sh
   ```
 - Responde às perguntas (domínios, diretório base único, trusted proxies). Ele organiza tudo abaixo do diretório base (padrão `/data/nc-oo`: volumes na raiz e `.../certs` para CA/cert). Domínios padrão sugeridos: `cloud.axisnetworks` (Nextcloud) e `onlyoffice.axisnetworks` (OnlyOffice). Se instalar Docker, será preciso relogar para o grupo `docker`.
-- Para evitar pegar releases muito novas, o `.env` gerado já define `NEXTCLOUD_IMAGE=nextcloud:30-apache` (linha de suporte atual). **Nota:** Temporariamente removemos a imagem custom SMB/SFTP porque os pacotes do PHP 8.2 não estão estáveis no apt/pecl; se precisar de SMB, instale `smbclient` dentro do container após subir (ou abra uma issue). **Não faça downgrade de versão já instalada**.
+- Para evitar pegar releases muito novas, o `.env` gerado já define `NEXTCLOUD_IMAGE=nextcloud:31-apache` (linha de suporte atual). **Nota:** Temporariamente removemos a imagem custom SMB/SFTP porque os pacotes do PHP 8.2 não estão estáveis no apt/pecl; se precisar de SMB, instale `smbclient` dentro do container após subir (ou abra uma issue). **Não faça downgrade de versão já instalada**.
 - Perfis de proxy (prompt do setup):
   - `internet`: uso padrão com domínio público (pode usar Let’s Encrypt).
   - `local`: TLS com CA interna para LAN.
@@ -236,7 +236,7 @@ Stack Docker para Nextcloud + OnlyOffice usando DNS local (ex.: Mikrotik) e TLS 
 
 ## Configuração rápida (.env)
 Copie `.env.example` para `.env` e ajuste:
-- `NEXTCLOUD_IMAGE`: imagem/tag base do Nextcloud; padrão `nextcloud:30-apache`. Para SMB, por ora instale manualmente dentro do container (`apt-get update && apt-get install -y smbclient`) até estabilizarmos a imagem custom.
+- `NEXTCLOUD_IMAGE`: imagem/tag base do Nextcloud; padrão `nextcloud:31-apache`. Para SMB, por ora instale manualmente dentro do container (`apt-get update && apt-get install -y smbclient`) até estabilizarmos a imagem custom.
 - `NEXTCLOUD_ADMIN_USER` / `NEXTCLOUD_ADMIN_PASSWORD`: defina para criar o admin automaticamente na primeira inicialização. Se deixar em branco, a UI pedirá usuário/senha na tela de instalação.
 - `NC_DB_ROOT_PASSWORD`, `NC_DB_PASSWORD`: senhas do MariaDB.
 - Volumes (`/data/...`): paths persistentes no host para Nextcloud e OnlyOffice.

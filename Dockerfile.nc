@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=nextcloud:30-apache-bullseye
+ARG BASE_IMAGE=nextcloud:31-apache
 FROM ${BASE_IMAGE}
 
 # SMB/SFTP support via pecl (mantemos deps de build para compatibilidade)
