@@ -81,16 +81,25 @@ RCLONE_CACHE_DEFAULT="${RCLONE_CACHE_DIR:-${RCLONE_BASE%/}/rclone-cache}"
 RCLONE_CACHE_DIR="$(prompt_default "Cache do rclone" "${RCLONE_CACHE_DEFAULT}")"
 
 GDRIVE_MOUNT_DEFAULT="${GDRIVE_MOUNT:-${RCLONE_BASE%/}/gdrive}"
-GDRIVE_MOUNT="$(prompt_default "Pasta de mount do GDrive" "${GDRIVE_MOUNT_DEFAULT}")"
-
 DROPBOX_MOUNT_DEFAULT="${DROPBOX_MOUNT:-${RCLONE_BASE%/}/dropbox}"
-DROPBOX_MOUNT="$(prompt_default "Pasta de mount do Dropbox" "${DROPBOX_MOUNT_DEFAULT}")"
-
 GDRIVE_SOURCE_DEFAULT="${GDRIVE_SOURCE:-gdrive:}"
-GDRIVE_SOURCE="$(prompt_default "Source do GDrive (ex.: gdrive:ROTA)" "${GDRIVE_SOURCE_DEFAULT}")"
-
 DROPBOX_SOURCE_DEFAULT="${DROPBOX_SOURCE:-dropbox:}"
-DROPBOX_SOURCE="$(prompt_default "Source do Dropbox (ex.: dropbox:EMPRESAS)" "${DROPBOX_SOURCE_DEFAULT}")"
+
+if [ "${ENABLE_GDRIVE}" = "y" ]; then
+  GDRIVE_MOUNT="$(prompt_default "Pasta de mount do GDrive" "${GDRIVE_MOUNT_DEFAULT}")"
+  GDRIVE_SOURCE="$(prompt_default "Source do GDrive (ex.: gdrive:ROTA)" "${GDRIVE_SOURCE_DEFAULT}")"
+else
+  GDRIVE_MOUNT="${GDRIVE_MOUNT_DEFAULT}"
+  GDRIVE_SOURCE="${GDRIVE_SOURCE_DEFAULT}"
+fi
+
+if [ "${ENABLE_DROPBOX}" = "y" ]; then
+  DROPBOX_MOUNT="$(prompt_default "Pasta de mount do Dropbox" "${DROPBOX_MOUNT_DEFAULT}")"
+  DROPBOX_SOURCE="$(prompt_default "Source do Dropbox (ex.: dropbox:EMPRESAS)" "${DROPBOX_SOURCE_DEFAULT}")"
+else
+  DROPBOX_MOUNT="${DROPBOX_MOUNT_DEFAULT}"
+  DROPBOX_SOURCE="${DROPBOX_SOURCE_DEFAULT}"
+fi
 
 RCLONE_UID="${RCLONE_UID:-33}"
 RCLONE_GID="${RCLONE_GID:-33}"
@@ -111,6 +120,22 @@ if [ "${ENABLE_DROPBOX}" = "y" ]; then
   ${SUDO} mkdir -p "${DROPBOX_MOUNT}"
 fi
 ${SUDO} mkdir -p "$(dirname "${RCLONE_CONFIG_PATH}")"
+
+disable_service_if_present() {
+  local name="$1"
+  if ${SUDO} systemctl list-unit-files --type=service 2>/dev/null | awk '{print $1}' | grep -qx "${name}.service"; then
+    local ans
+    ans="$(prompt_default "Desabilitar e remover ${name}.service existente?" "y")"
+    if is_yes "${ans}"; then
+      ${SUDO} systemctl stop "${name}" >/dev/null 2>&1 || true
+      ${SUDO} systemctl disable "${name}" >/dev/null 2>&1 || true
+      ${SUDO} rm -f "/etc/systemd/system/${name}.service"
+      ${SUDO} rm -rf "/etc/systemd/system/${name}.service.d"
+      ${SUDO} systemctl daemon-reload
+      echo "[ok] ${name}.service removido."
+    fi
+  fi
+}
 
 ensure_rshared() {
   local base="$1"
@@ -156,9 +181,13 @@ EOF
 
 if [ "${ENABLE_GDRIVE}" = "y" ]; then
   write_unit "rclone-gdrive" "${GDRIVE_SOURCE}" "${GDRIVE_MOUNT}"
+else
+  disable_service_if_present "rclone-gdrive"
 fi
 if [ "${ENABLE_DROPBOX}" = "y" ]; then
   write_unit "rclone-dropbox" "${DROPBOX_SOURCE}" "${DROPBOX_MOUNT}"
+else
+  disable_service_if_present "rclone-dropbox"
 fi
 
 ${SUDO} systemctl daemon-reload
@@ -253,7 +282,9 @@ PY
   echo "[ok] docker-compose.yml atualizado com mounts rclone."
 }
 
-update_compose
+if [ "${ENABLE_GDRIVE}" = "y" ] || [ "${ENABLE_DROPBOX}" = "y" ]; then
+  update_compose
+fi
 
 cat <<EOF
 
@@ -262,9 +293,13 @@ EOF
 
 if [ "${ENABLE_GDRIVE}" = "y" ]; then
   echo "  - rclone-gdrive -> ${GDRIVE_MOUNT} (source: ${GDRIVE_SOURCE})"
+else
+  echo "  - rclone-gdrive (desativado)"
 fi
 if [ "${ENABLE_DROPBOX}" = "y" ]; then
   echo "  - rclone-dropbox -> ${DROPBOX_MOUNT} (source: ${DROPBOX_SOURCE})"
+else
+  echo "  - rclone-dropbox (desativado)"
 fi
 
 cat <<EOF
