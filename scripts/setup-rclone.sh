@@ -30,6 +30,13 @@ prompt_default() {
   fi
 }
 
+is_yes() {
+  case "$1" in
+    y|Y|yes|YES|Yes|s|S|sim|SIM|Sim) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 if ! command -v rclone >/dev/null 2>&1; then
   echo "[info] Instalando rclone..."
   ensure_pkg rclone
@@ -55,6 +62,20 @@ fi
 
 RCLONE_BASE_DEFAULT="${RCLONE_BASE:-/data}"
 RCLONE_BASE="$(prompt_default "Base para mounts rclone" "${RCLONE_BASE_DEFAULT}")"
+
+ENABLE_GDRIVE_DEFAULT="${ENABLE_GDRIVE:-y}"
+ENABLE_GDRIVE_RAW="$(prompt_default "Ativar mount do GDrive?" "${ENABLE_GDRIVE_DEFAULT}")"
+ENABLE_GDRIVE="n"
+if is_yes "${ENABLE_GDRIVE_RAW}"; then
+  ENABLE_GDRIVE="y"
+fi
+
+ENABLE_DROPBOX_DEFAULT="${ENABLE_DROPBOX:-y}"
+ENABLE_DROPBOX_RAW="$(prompt_default "Ativar mount do Dropbox?" "${ENABLE_DROPBOX_DEFAULT}")"
+ENABLE_DROPBOX="n"
+if is_yes "${ENABLE_DROPBOX_RAW}"; then
+  ENABLE_DROPBOX="y"
+fi
 
 RCLONE_CACHE_DEFAULT="${RCLONE_CACHE_DIR:-${RCLONE_BASE%/}/rclone-cache}"
 RCLONE_CACHE_DIR="$(prompt_default "Cache do rclone" "${RCLONE_CACHE_DEFAULT}")"
@@ -82,7 +103,13 @@ RCLONE_HOME="${RCLONE_HOME:-/root}"
 RCLONE_CONFIG_DEFAULT="${RCLONE_CONFIG_PATH:-${RCLONE_HOME%/}/.config/rclone/rclone.conf}"
 RCLONE_CONFIG_PATH="$(prompt_default "Caminho do rclone.conf" "${RCLONE_CONFIG_DEFAULT}")"
 
-${SUDO} mkdir -p "${RCLONE_CACHE_DIR}" "${GDRIVE_MOUNT}" "${DROPBOX_MOUNT}"
+${SUDO} mkdir -p "${RCLONE_CACHE_DIR}"
+if [ "${ENABLE_GDRIVE}" = "y" ]; then
+  ${SUDO} mkdir -p "${GDRIVE_MOUNT}"
+fi
+if [ "${ENABLE_DROPBOX}" = "y" ]; then
+  ${SUDO} mkdir -p "${DROPBOX_MOUNT}"
+fi
 ${SUDO} mkdir -p "$(dirname "${RCLONE_CONFIG_PATH}")"
 
 ensure_rshared() {
@@ -99,7 +126,9 @@ ensure_rshared() {
   fi
 }
 
-ensure_rshared "${RCLONE_BASE}"
+if [ "${ENABLE_GDRIVE}" = "y" ] || [ "${ENABLE_DROPBOX}" = "y" ]; then
+  ensure_rshared "${RCLONE_BASE}"
+fi
 
 write_unit() {
   local name="$1" source="$2" mountpoint="$3" unit_path="/etc/systemd/system/${name}.service"
@@ -125,11 +154,20 @@ WantedBy=multi-user.target
 EOF
 }
 
-write_unit "rclone-gdrive" "${GDRIVE_SOURCE}" "${GDRIVE_MOUNT}"
-write_unit "rclone-dropbox" "${DROPBOX_SOURCE}" "${DROPBOX_MOUNT}"
+if [ "${ENABLE_GDRIVE}" = "y" ]; then
+  write_unit "rclone-gdrive" "${GDRIVE_SOURCE}" "${GDRIVE_MOUNT}"
+fi
+if [ "${ENABLE_DROPBOX}" = "y" ]; then
+  write_unit "rclone-dropbox" "${DROPBOX_SOURCE}" "${DROPBOX_MOUNT}"
+fi
 
 ${SUDO} systemctl daemon-reload
-${SUDO} systemctl enable rclone-gdrive rclone-dropbox >/dev/null 2>&1 || true
+if [ "${ENABLE_GDRIVE}" = "y" ]; then
+  ${SUDO} systemctl enable rclone-gdrive >/dev/null 2>&1 || true
+fi
+if [ "${ENABLE_DROPBOX}" = "y" ]; then
+  ${SUDO} systemctl enable rclone-dropbox >/dev/null 2>&1 || true
+fi
 
 update_compose() {
   local compose="${REPO_ROOT}/docker-compose.yml"
@@ -141,6 +179,15 @@ update_compose() {
     [Yy]*) ;;
     *) return 0 ;;
   esac
+
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "[warn] python3 nao encontrado; nao foi possivel editar o docker-compose.yml automaticamente."
+    return 0
+  fi
+
+  local backup="${compose}.bak.$(date +%Y%m%d-%H%M%S)"
+  cp "${compose}" "${backup}"
+  echo "[info] Backup do docker-compose.yml em ${backup}"
 
   local gdrive_line dropbox_line
   gdrive_line="      - ${GDRIVE_MOUNT}:/data/gdrive:rw,rshared"
@@ -162,9 +209,9 @@ have_dropbox = False
 
 def flush_missing():
     if svc in services and in_volumes:
-        if not have_gdrive:
+        if "${ENABLE_GDRIVE}" == "y" and not have_gdrive:
             out.append("${gdrive_line}")
-        if not have_dropbox:
+        if "${ENABLE_DROPBOX}" == "y" and not have_dropbox:
             out.append("${dropbox_line}")
 
 for line in lines:
@@ -211,14 +258,34 @@ update_compose
 cat <<EOF
 
 [ok] Systemd services criados:
-  - rclone-gdrive -> ${GDRIVE_MOUNT} (source: ${GDRIVE_SOURCE})
-  - rclone-dropbox -> ${DROPBOX_MOUNT} (source: ${DROPBOX_SOURCE})
+EOF
+
+if [ "${ENABLE_GDRIVE}" = "y" ]; then
+  echo "  - rclone-gdrive -> ${GDRIVE_MOUNT} (source: ${GDRIVE_SOURCE})"
+fi
+if [ "${ENABLE_DROPBOX}" = "y" ]; then
+  echo "  - rclone-dropbox -> ${DROPBOX_MOUNT} (source: ${DROPBOX_SOURCE})"
+fi
+
+cat <<EOF
 
 Proximo passo (obrigatorio):
   1) Copie o seu rclone.conf para:
      ${RCLONE_CONFIG_PATH}
   2) Depois disso, rode:
-     systemctl restart rclone-gdrive rclone-dropbox
+EOF
+
+if [ "${ENABLE_GDRIVE}" = "y" ] && [ "${ENABLE_DROPBOX}" = "y" ]; then
+  echo "     systemctl restart rclone-gdrive rclone-dropbox"
+elif [ "${ENABLE_GDRIVE}" = "y" ]; then
+  echo "     systemctl restart rclone-gdrive"
+elif [ "${ENABLE_DROPBOX}" = "y" ]; then
+  echo "     systemctl restart rclone-dropbox"
+else
+  echo "     (nenhum service criado)"
+fi
+
+cat <<EOF
 
 Obs:
   - Se quiser outro local, basta informar o caminho acima quando o script perguntar.
