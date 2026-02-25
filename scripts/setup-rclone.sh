@@ -79,7 +79,8 @@ RCLONE_VFS_CACHE_MAX_SIZE="${RCLONE_VFS_CACHE_MAX_SIZE:-20G}"
 RCLONE_VFS_CACHE_MAX_AGE="${RCLONE_VFS_CACHE_MAX_AGE:-24h}"
 
 RCLONE_HOME="${RCLONE_HOME:-/root}"
-RCLONE_CONFIG_PATH="${RCLONE_CONFIG_PATH:-${RCLONE_HOME%/}/.config/rclone/rclone.conf}"
+RCLONE_CONFIG_DEFAULT="${RCLONE_CONFIG_PATH:-${RCLONE_HOME%/}/.config/rclone/rclone.conf}"
+RCLONE_CONFIG_PATH="$(prompt_default "Caminho do rclone.conf" "${RCLONE_CONFIG_DEFAULT}")"
 
 ${SUDO} mkdir -p "${RCLONE_CACHE_DIR}" "${GDRIVE_MOUNT}" "${DROPBOX_MOUNT}"
 ${SUDO} mkdir -p "$(dirname "${RCLONE_CONFIG_PATH}")"
@@ -218,6 +219,9 @@ Proximo passo (obrigatorio):
      ${RCLONE_CONFIG_PATH}
   2) Depois disso, rode:
      systemctl restart rclone-gdrive rclone-dropbox
+
+Obs:
+  - Se quiser outro local, basta informar o caminho acima quando o script perguntar.
 
 Dicas:
   - Se quiser montar subpastas, ajuste os sources no unit file
