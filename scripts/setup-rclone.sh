@@ -156,7 +156,8 @@ if [ "${ENABLE_GDRIVE}" = "y" ] || [ "${ENABLE_DROPBOX}" = "y" ]; then
 fi
 
 write_unit() {
-  local name="$1" source="$2" mountpoint="$3" unit_path="/etc/systemd/system/${name}.service"
+  local name="$1" source="$2" mountpoint="$3"
+  local unit_path="/etc/systemd/system/${name}.service"
   ${SUDO} tee "${unit_path}" >/dev/null <<EOF
 [Unit]
 Description=Rclone mount ${name#rclone-}
